@@ -1,0 +1,3130 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema · Trigoncio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * { font-family:'Inter',sans-serif; }
+    .fade-in { animation:fadeIn .2s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+    .tab-activo { background:#166534!important;color:#fff!important; }
+    .metodo-btn { transition:all .15s; }
+    .metodo-activo-efectivo { background:#16a34a!important;color:#fff!important;border-color:#16a34a!important; }
+    .metodo-activo-yape    { background:#7c3aed!important;color:#fff!important;border-color:#7c3aed!important; }
+    .card-pendiente { border-left:4px solid #f59e0b; }
+    .card-cobrado   { border-left:4px solid #22c55e; }
+    ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-green-800 text-white shadow-lg sticky top-0 z-30">
+  <div class="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div>
+        <h1 class="text-base font-bold leading-tight">Lavanderia Trigoncio</h1>
+        <p class="text-green-200 text-xs">Control de entradas y cobros</p>
+      </div>
+    </div>
+    <button onclick="abrirConfig()" class="bg-white/15 hover:bg-white/25 transition px-3 py-2 rounded-lg text-xs font-semibold">⚙️ Config</button>
+  </div>
+  <!-- TABS -->
+  <div class="max-w-lg mx-auto px-4 flex gap-1 pb-2">
+    <button id="tab-entrada"       onclick="irTab('entrada')"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold bg-white/20 text-white transition">🧺 Entrada</button>
+    <button id="tab-cobro"         onclick="irTab('cobro')"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold text-green-200 transition">💰 Cobro</button>
+    <button id="tab-comprobantes"  onclick="irTab('comprobantes')"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold text-green-200 transition">🧾 Comprobantes</button>
+    <button id="tab-resumen"       onclick="irTab('resumen')"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold text-green-200 transition">📊 Resumen</button>
+    <button id="tab-avisos"        onclick="irTab('avisos')"
+      class="flex-1 py-2 rounded-lg text-xs font-semibold text-green-200 transition">📲 Avisos</button>
+  </div>
+</header>
+
+<!-- ══ CONFIG PANEL ══ -->
+<div id="panel-config" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+  <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 space-y-4 fade-in max-h-[85vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-bold text-slate-800">Configuración</h2>
+      <button onclick="cerrarConfig()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-2">
+      <span class="text-lg">✅</span>
+      <p class="text-sm font-semibold text-green-800">Sistema conectado a Supabase ✅</p>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-slate-700 mb-1">Nombre del negocio</label>
+      <input id="cfg-negocio" type="text" placeholder="Trigoncio"
+        class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    </div>
+    <!-- Logo para tickets -->
+    <div class="border-t border-slate-100 pt-4">
+      <label class="block text-sm font-semibold text-slate-700 mb-2">Logo en tickets de impresión</label>
+      <div class="flex items-center gap-4">
+        <div id="logo-preview-wrap" class="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 overflow-hidden shrink-0">
+          <span id="logo-placeholder" class="text-2xl">🔧</span>
+          <img id="logo-preview" class="hidden w-full h-full object-contain" />
+        </div>
+        <div class="flex-1 space-y-2">
+          <input type="file" id="input-logo" accept="image/*" onchange="cargarLogo(this)"
+            class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer" />
+          <button onclick="quitarLogo()" class="text-xs text-red-500 hover:text-red-700 font-medium">✕ Quitar logo</button>
+        </div>
+      </div>
+      <div class="mt-3 space-y-2">
+        <label class="block text-xs font-semibold text-slate-600">Tamaño del nombre del negocio</label>
+        <div class="grid grid-cols-4 gap-2">
+          <button type="button" onclick="selTamNeg(1)" id="tn-1"
+            class="tn-btn py-3 rounded-xl border-2 border-green-700 bg-green-700 text-white font-black transition text-sm">1</button>
+          <button type="button" onclick="selTamNeg(2)" id="tn-2"
+            class="tn-btn py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-black transition text-base hover:border-green-300">2</button>
+          <button type="button" onclick="selTamNeg(3)" id="tn-3"
+            class="tn-btn py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-black transition text-lg hover:border-green-300">3</button>
+          <button type="button" onclick="selTamNeg(4)" id="tn-4"
+            class="tn-btn py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-black transition text-xl hover:border-green-300">4</button>
+        </div>
+        <p class="text-xs text-slate-400">1 = normal · 4 = máximo (ocupa más espacio en el papel)</p>
+        <div class="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 mt-1">
+          <div>
+            <p class="text-sm font-semibold text-slate-700">Negrita en el nombre</p>
+            <p class="text-xs text-slate-400">Trigoncio en bold</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="cfg-bold-negocio" onchange="guardarTicketCfg()" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-700"></div>
+          </label>
+        </div>
+      </div>
+      <div class="mt-3">
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Slogan o subtítulo <span class="text-slate-400 font-normal">(opcional)</span></label>
+        <input id="cfg-subtitulo" type="text" placeholder="Ej: Lavado Perfumado · Lavado en Burbujas"
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+    </div>
+
+    <!-- ═══ CABECERA DEL TICKET ═══ -->
+    <div class="border-t border-slate-100 pt-4 space-y-3">
+      <p class="text-sm font-bold text-slate-700">📋 Cabecera del ticket</p>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Dirección <span class="text-slate-400 font-normal">(opcional)</span></label>
+        <input id="cfg-direccion" type="text" placeholder="Ej: Av. Los Claveles Mz R Lt. 31 - El Agustino"
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono / celular <span class="text-slate-400 font-normal">(opcional)</span></label>
+        <input id="cfg-telefono" type="text" placeholder="Ej: 📞 987 654 321"
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Líneas extra de cabecera <span class="text-slate-400 font-normal">(servicios, horario, etc.)</span></label>
+        <textarea id="cfg-extra-cabecera" rows="3" placeholder="Ej:
+Te Ofrecemos: Lavado Perfumado
+Frazadas · Cubrecamas · Cortinas"
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+        <p class="text-xs text-slate-400 mt-1">Cada línea aparece centrada debajo del nombre del negocio</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Título del ticket</label>
+        <input id="cfg-titulo-ticket" type="text" placeholder="TICKET DE INGRESO"
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Etiqueta del número <span class="text-slate-400 font-normal">(lo que aparece antes del código)</span></label>
+        <input id="cfg-etiqueta-num" type="text" placeholder="Ej: Nº — o déjalo vacío"
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+    </div>
+
+    <!-- ═══ PIE DEL TICKET ═══ -->
+    <div class="border-t border-slate-100 pt-4 space-y-3">
+      <p class="text-sm font-bold text-slate-700">📝 Pie del ticket</p>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Mensaje principal de pie</label>
+        <input id="cfg-pie" type="text" placeholder="Gracias por su preferencia"
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Notas / condiciones <span class="text-slate-400 font-normal">(letras pequeñas al final)</span></label>
+        <textarea id="cfg-notas-pie" rows="4" placeholder="Ej:
+* Las prendas con más de 15 días se actualizará el precio.
+* No nos responsabilizamos por prendas que destiñan.
+* Canjear por Boleta de Venta."
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
+        <p class="text-xs text-slate-400 mt-1">Cada línea del texto aparece al final del ticket</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Símbolo decorativo final</label>
+        <input id="cfg-simbolo" type="text" placeholder="* * *"
+          oninput="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+    </div>
+
+    <!-- ═══ ESTILO ═══ -->
+    <div class="border-t border-slate-100 pt-4 space-y-3">
+      <p class="text-sm font-bold text-slate-700">🎨 Estilo</p>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Separador de líneas</label>
+        <select id="cfg-separador" onchange="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+          <option value="-">──────── (guión)</option>
+          <option value="=">════════ (doble)</option>
+          <option value=".">········ (puntos)</option>
+          <option value="~">~~~~~~~~ (onda)</option>
+          <option value="*">★ ★ ★ ★  (estrellas)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Tamaño de letra</label>
+        <select id="cfg-tamano-fuente" onchange="guardarTicketCfg()"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+          <option value="pequeño">Pequeña — más texto por línea (56 cols)</option>
+          <option value="normal" selected>Normal (42 cols)</option>
+          <option value="grande">Grande — más alto (42 cols, doble alto)</option>
+        </select>
+      </div>
+
+      <div class="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3">
+        <div>
+          <p class="text-sm font-semibold text-slate-700">Mostrar hora en ticket</p>
+          <p class="text-xs text-slate-400">Incluye la hora junto a la fecha</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="cfg-mostrar-hora" onchange="guardarTicketCfg()" class="sr-only peer" checked>
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-700"></div>
+        </label>
+      </div>
+
+      <div class="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3">
+        <div>
+          <p class="text-sm font-semibold text-slate-700">Mostrar columna de artículos</p>
+          <p class="text-xs text-slate-400">Cabecera ARTICULO / PRECIO</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="cfg-mostrar-cabecera" onchange="guardarTicketCfg()" class="sr-only peer" checked>
+          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-700"></div>
+        </label>
+      </div>
+
+      <!-- Vista previa en configuración -->
+      <div>
+        <p class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Vista previa en tiempo real</p>
+        <div id="cfg-ticket-preview" class="mx-auto font-mono bg-white border border-dashed border-slate-300 rounded p-3 overflow-x-auto" style="font-size:10px;line-height:1.55;max-width:380px;white-space:pre-wrap;word-break:break-word"></div>
+      </div>
+    </div>
+
+    <button onclick="guardarConfig()"
+      class="w-full bg-green-700 text-white rounded-xl py-3 font-semibold hover:bg-green-800 transition">
+      // Guardar configuración
+    </button>
+  </div>
+</div>
+
+<!-- ══ TAB ENTRADA ══ -->
+<div id="sec-entrada" class="max-w-lg mx-auto px-4 py-5 space-y-4 pb-24">
+
+  <!-- Número de ticket -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4 flex items-center justify-between">
+    <div>
+      <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold">Ticket de entrada</p>
+      <p id="entrada-codigo" class="text-3xl font-black font-mono text-green-700 mt-0.5"></p>
+    </div>
+    <button onclick="nuevoCodigoEntrada()"
+      class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-xl font-semibold transition">🔄 Nuevo</button>
+  </div>
+
+  <!-- Formulario -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-5 space-y-4">
+    <h3 class="text-sm font-bold text-slate-700">Datos del cliente</h3>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Nombre *</label>
+      <input id="e-nombre" type="text" placeholder="Ej: María García" autocomplete="off"
+        oninput="sugerirNombre(this.value)"
+        class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      <div id="e-sugerencias" class="hidden border border-slate-200 rounded-xl mt-1 bg-white shadow-lg overflow-hidden z-10 relative"></div>
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Celular (opcional)</label>
+      <div class="flex items-center gap-2 border border-slate-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-green-500 bg-white">
+        <span class="text-slate-400 font-semibold text-sm">+51</span>
+        <input id="e-celular" type="tel" placeholder="987654321"
+          class="flex-1 text-sm focus:outline-none bg-transparent"/>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Fecha</label>
+        <input id="e-fecha" type="date"
+          class="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Hora</label>
+        <input id="e-hora" type="time"
+          class="w-full border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+    </div>
+
+    <!-- Artículos -->
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Artículos y precios</label>
+        <button onclick="agregarItemEntrada()"
+          class="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-lg font-semibold transition">+ Agregar</button>
+      </div>
+      <div id="e-items" class="space-y-2"></div>
+      <div class="flex items-center justify-between mt-3 bg-gradient-to-r from-green-700 to-green-800 rounded-xl px-4 py-3.5 text-white">
+        <span class="font-semibold text-sm">Total a cobrar</span>
+        <span id="e-total" class="text-2xl font-black">S/ 0.00</span>
+      </div>
+    </div>
+
+    <!-- Notas -->
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Observaciones (opcional)</label>
+      <input id="e-nota" type="text" placeholder="Ej: mancha en camisa azul, ropa delicada..."
+        class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    </div>
+  </div>
+
+  <!-- Preview del ticket -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4">
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs font-bold text-slate-500 uppercase tracking-wide">Vista previa del ticket</p>
+      <button onclick="togglePreview()" id="btn-preview" class="text-xs text-green-700 font-semibold hover:underline">Mostrar</button>
+    </div>
+    <div id="ticket-preview" class="hidden">
+      <div id="ticket-paper" class="mx-auto font-mono leading-tight bg-white border border-dashed border-slate-300 rounded p-3" style="width:380px;font-size:11px;line-height:1.55;white-space:pre-wrap;word-break:break-word"></div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 gap-3">
+    <button onclick="registrarEntrada()"
+      class="bg-green-700 text-white rounded-2xl py-4 text-sm font-black hover:bg-green-800 active:scale-95 transition shadow-lg shadow-green-200 flex items-center justify-center gap-2">
+      💾 Guardar
+    </button>
+    <button onclick="registrarEImprimir()"
+      class="bg-slate-800 text-white rounded-2xl py-4 text-sm font-black hover:bg-slate-900 active:scale-95 transition shadow-lg shadow-slate-200 flex items-center justify-center gap-2">
+      🖨️ Guardar e Imprimir
+    </button>
+  </div>
+  <!-- Último voucher impreso -->
+  <div id="ultimo-voucher-banner" class="hidden bg-green-50 border border-green-200 rounded-2xl px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-green-100 transition" onclick="verUltimoVoucher()">
+    <div class="flex items-center gap-2">
+      <span class="text-xl">🧾</span>
+      <div>
+        <p class="text-sm font-bold text-green-800">Último voucher impreso</p>
+        <p id="ultimo-voucher-info" class="text-xs text-green-600"></p>
+      </div>
+    </div>
+    <span class="text-green-500 text-lg">›</span>
+  </div>
+</div>
+
+<!-- ══ TAB COBRO ══ -->
+<div id="sec-cobro" class="hidden max-w-lg mx-auto px-4 py-5 space-y-4 pb-24">
+
+  <!-- Buscador -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-4">
+    <label class="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Buscar ticket pendiente</label>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+      <input id="c-buscar" type="text" placeholder="Nombre del cliente o # de ticket..."
+        class="w-full pl-9 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    </div>
+  </div>
+
+  <!-- Lista pendientes -->
+  <div id="c-pendientes" class="space-y-2"></div>
+
+  <!-- Formulario cobro (se muestra al seleccionar) -->
+  <div id="c-form" class="hidden space-y-4 fade-in">
+    <div class="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+      <div class="flex items-center justify-between mb-1">
+        <span id="c-ticket-num" class="font-black font-mono text-2xl text-green-700"></span>
+        <button onclick="deseleccionarTicket()" class="text-xs text-slate-400 hover:text-slate-600">✕ Cancelar</button>
+      </div>
+      <p id="c-ticket-nombre" class="font-bold text-slate-800"></p>
+      <p id="c-ticket-detalle" class="text-xs text-slate-500 mt-1"></p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-5 space-y-4">
+      <!-- Método de pago -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Método de pago *</label>
+        <div class="grid grid-cols-2 gap-3">
+          <button id="btn-efectivo" onclick="selMetodo('efectivo')"
+            class="metodo-btn border-2 border-slate-200 rounded-xl py-3.5 text-sm font-bold text-slate-600 flex flex-col items-center gap-1">
+            <span class="text-2xl">💵</span>Efectivo
+          </button>
+          <button id="btn-yape" onclick="selMetodo('yape')"
+            class="metodo-btn border-2 border-slate-200 rounded-xl py-3.5 text-sm font-bold text-slate-600 flex flex-col items-center gap-1">
+            <span class="text-2xl">📱</span>Yape
+          </button>
+        </div>
+      </div>
+
+      <!-- Monto -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Monto cobrado</label>
+        <div class="flex items-center gap-2 border-2 border-slate-200 rounded-xl px-4 py-3 focus-within:border-green-500 transition">
+          <span class="text-slate-500 font-bold">S/</span>
+          <input id="c-monto" type="number" min="0" step="0.50" placeholder="0.00"
+            class="flex-1 text-xl font-black text-slate-800 focus:outline-none bg-transparent"/>
+        </div>
+      </div>
+
+      <!-- Foto recibo -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Foto del recibo (opcional)</label>
+        <label class="flex items-center gap-3 border-2 border-dashed border-slate-200 rounded-xl px-4 py-3.5 cursor-pointer hover:border-green-300 transition">
+          <span class="text-2xl">📷</span>
+          <div>
+            <p class="text-sm font-semibold text-slate-700">Tomar foto o subir imagen</p>
+            <p class="text-xs text-slate-400">Foto del ticket pegado en la bolsa</p>
+          </div>
+          <input id="c-foto" type="file" accept="image/*" capture="environment"
+            onchange="previsualizarFoto(this)" class="hidden"/>
+        </label>
+        <div id="c-foto-preview" class="hidden mt-2">
+          <img id="c-foto-img" class="w-full max-h-48 object-cover rounded-xl border border-slate-200"/>
+          <div class="flex items-center justify-between mt-1">
+            <p id="c-foto-estado" class="text-xs text-green-600 font-medium"></p>
+            <button onclick="quitarFoto()" class="text-xs text-red-400 hover:text-red-600">✕ Quitar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="registrarCobro()"
+      class="w-full bg-green-600 text-white rounded-2xl py-4 text-base font-black hover:bg-green-700 active:scale-95 transition shadow-lg shadow-green-200 flex items-center justify-center gap-2">
+      💰 Registrar cobro
+    </button>
+  </div>
+
+  <div id="c-vacio" class="hidden text-center py-16 text-slate-400">
+    <div class="text-5xl mb-3">✅</div>
+    <p class="font-semibold">Sin tickets pendientes</p>
+    <p class="text-sm">Todos los tickets han sido cobrados</p>
+  </div>
+</div>
+
+<!-- ══ TAB RESUMEN ══ -->
+<div id="sec-resumen" class="hidden max-w-lg mx-auto px-4 py-5 space-y-4 pb-24">
+
+  <!-- Filtro fecha -->
+  <div class="flex items-center gap-3">
+    <input id="r-fecha" type="date" onchange="renderResumen()"
+      class="flex-1 border border-slate-200 bg-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"/>
+    <button onclick="document.getElementById('r-fecha').value=hoy(); renderResumen();"
+      class="text-xs bg-green-700 text-white px-4 py-3 rounded-xl font-semibold hover:bg-green-800 transition">Hoy</button>
+  </div>
+
+  <!-- Tarjetas resumen -->
+  <div class="grid grid-cols-2 gap-3">
+    <div class="bg-green-700 text-white rounded-2xl px-4 py-4 shadow-lg shadow-green-200">
+      <p class="text-green-200 text-xs font-semibold uppercase tracking-wide">Entradas</p>
+      <p id="r-entradas" class="text-3xl font-black mt-1">0</p>
+      <p class="text-green-200 text-xs mt-1">bolsas registradas</p>
+    </div>
+    <div class="bg-amber-500 text-white rounded-2xl px-4 py-4 shadow-lg shadow-amber-200">
+      <p class="text-amber-100 text-xs font-semibold uppercase tracking-wide">Pendientes</p>
+      <p id="r-pendientes" class="text-3xl font-black mt-1">0</p>
+      <p class="text-amber-100 text-xs mt-1">sin cobrar aún</p>
+    </div>
+    <div class="bg-green-600 text-white rounded-2xl px-4 py-4 shadow-lg shadow-green-200">
+      <p class="text-green-200 text-xs font-semibold uppercase tracking-wide">💵 Efectivo</p>
+      <p id="r-efectivo" class="text-2xl font-black mt-1">S/ 0</p>
+    </div>
+    <div class="bg-purple-600 text-white rounded-2xl px-4 py-4 shadow-lg shadow-purple-200">
+      <p class="text-purple-200 text-xs font-semibold uppercase tracking-wide">📱 Yape</p>
+      <p id="r-yape" class="text-2xl font-black mt-1">S/ 0</p>
+    </div>
+  </div>
+
+  <!-- Total general -->
+  <div class="bg-slate-800 text-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-lg">
+    <div>
+      <p class="text-slate-400 text-xs font-semibold uppercase tracking-wide">Total cobrado del día</p>
+      <p id="r-total" class="text-4xl font-black mt-0.5">S/ 0.00</p>
+    </div>
+    <div class="text-4xl">💰</div>
+  </div>
+
+  <!-- Tabs lista -->
+  <div class="flex gap-2">
+    <button onclick="setTabResumen('entradas')" id="rtab-entradas"
+      class="flex-1 py-2 text-xs font-bold rounded-xl border-2 border-green-700 text-green-700 tab-activo transition">Entradas</button>
+    <button onclick="setTabResumen('cobros')" id="rtab-cobros"
+      class="flex-1 py-2 text-xs font-bold rounded-xl border-2 border-slate-200 text-slate-500 transition">Cobros</button>
+    <button onclick="setTabResumen('tabla')" id="rtab-tabla"
+      class="flex-1 py-2 text-xs font-bold rounded-xl border-2 border-slate-200 text-slate-500 transition">📊 Tabla</button>
+  </div>
+
+  <div id="r-lista" class="space-y-2"></div>
+  <div id="r-tabla" class="hidden space-y-4"></div>
+  <div id="r-vacio" class="hidden text-center py-12 text-slate-400">
+    <div class="text-4xl mb-2">📋</div>
+    <p class="text-sm">Sin registros para esta fecha</p>
+  </div>
+</div>
+
+<!-- MODAL EDITAR COBRO (foto + método) -->
+<div id="modal-edit-foto" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl w-full max-w-sm p-6 space-y-4">
+    <h3 class="font-black text-slate-800 text-lg">✏️ Editar cobro</h3>
+    <!-- Método de pago -->
+    <div>
+      <span class="text-xs font-semibold text-slate-500 block mb-2">Método de pago</span>
+      <div class="flex gap-2">
+        <button id="ef-btn-efectivo" onclick="setEfMetodo('efectivo')"
+          class="flex-1 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm transition">💵 Efectivo</button>
+        <button id="ef-btn-yape" onclick="setEfMetodo('yape')"
+          class="flex-1 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm transition">📱 Yape</button>
+      </div>
+    </div>
+    <!-- Foto (solo si yape) -->
+    <div id="ef-foto-section">
+      <img id="ef-preview" src="" class="hidden w-full rounded-xl object-cover max-h-48 mb-2"/>
+      <span class="text-xs font-semibold text-slate-500 block mb-2">Foto del comprobante (opcional)</span>
+      <div class="flex gap-2">
+        <label class="flex-1 cursor-pointer">
+          <input id="ef-input-camara" type="file" accept="image/*" capture="environment" onchange="efOnFileChange(this)" class="hidden"/>
+          <div class="w-full py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm text-center hover:bg-slate-50 transition">📷 Cámara</div>
+        </label>
+        <label class="flex-1 cursor-pointer">
+          <input id="ef-input" type="file" accept="image/*" onchange="efOnFileChange(this)" class="hidden"/>
+          <div class="w-full py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold text-sm text-center hover:bg-slate-50 transition">🖼️ Galería</div>
+        </label>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="cerrarEditFoto()" class="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-slate-600 font-bold text-sm">Cancelar</button>
+      <button onclick="confirmarEditFoto()" class="flex-1 py-3 rounded-2xl bg-green-700 text-white font-bold text-sm">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR TICKET -->
+<div id="modal-editar" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+  <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 space-y-4 fade-in max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-black text-slate-800">✏️ Editar ticket</h2>
+        <p id="edit-codigo-label" class="text-sm font-mono text-green-700"></p>
+      </div>
+      <button onclick="cerrarEditar()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+
+    <!-- Nombre -->
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Nombre del cliente</label>
+      <input id="edit-nombre" type="text"
+        class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    </div>
+
+    <!-- Artículos -->
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Artículos y precios</label>
+        <button onclick="agregarItemEditar()"
+          class="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-lg font-semibold transition">+ Agregar</button>
+      </div>
+      <div id="edit-items" class="space-y-2"></div>
+      <div class="flex items-center justify-between mt-3 bg-gradient-to-r from-green-700 to-green-800 rounded-xl px-4 py-3.5 text-white">
+        <span class="font-semibold text-sm">Total</span>
+        <span id="edit-total" class="text-2xl font-black">S/ 0.00</span>
+      </div>
+    </div>
+
+    <!-- Nota -->
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Observaciones</label>
+      <input id="edit-nota" type="text" placeholder="Opcional..."
+        class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    </div>
+
+    <button onclick="guardarEdicion()"
+      class="w-full bg-green-700 text-white rounded-2xl py-4 text-base font-black hover:bg-green-800 transition">
+      💾 Guardar cambios
+    </button>
+
+    <!-- Opciones avanzadas -->
+    <div class="border-t border-slate-100 pt-3">
+      <p class="text-xs text-slate-400 font-semibold uppercase tracking-wide mb-2">🔒 Opciones avanzadas</p>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="pedirClave('cambiarFecha')"
+          class="border border-amber-200 text-amber-600 rounded-xl py-2.5 text-xs font-bold hover:bg-amber-50 transition">
+          📅 Cambiar fecha
+        </button>
+        <button onclick="pedirClave('resetearPago')"
+          class="border border-red-200 text-red-500 rounded-xl py-2.5 text-xs font-bold hover:bg-red-50 transition">
+          🔄 Resetear a pendiente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL OPCIONES AVANZADAS (desde Resumen) -->
+<div id="modal-op-avanzadas" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center px-4">
+  <div class="bg-white rounded-3xl p-6 w-full max-w-sm space-y-4 fade-in">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg font-black text-slate-800">🔒 Opciones avanzadas</h3>
+        <p id="op-av-codigo" class="text-sm font-mono text-green-700 mt-0.5"></p>
+      </div>
+      <button onclick="cerrarOpAvanzadas()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="space-y-2">
+      <button onclick="pedirClaveResumen('cambiarFecha', _targetCodigo)"
+        class="w-full border border-amber-200 text-amber-600 rounded-xl py-3 text-sm font-bold hover:bg-amber-50 transition">
+        📅 Cambiar fecha
+      </button>
+      <button onclick="pedirClaveResumen('resetearPago', _targetCodigo)"
+        class="w-full border border-red-200 text-red-500 rounded-xl py-3 text-sm font-bold hover:bg-red-50 transition">
+        🔄 Resetear a pendiente
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONTRASEÑA -->
+<div id="modal-clave" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center px-4">
+  <div class="bg-white rounded-3xl p-6 w-full max-w-sm space-y-4 fade-in">
+    <div class="text-center">
+      <div class="text-4xl mb-2">🔒</div>
+      <h3 class="text-lg font-black text-slate-800">Acceso restringido</h3>
+      <p id="clave-desc" class="text-sm text-slate-500 mt-1"></p>
+    </div>
+    <input id="clave-input" type="password" placeholder="Contraseña"
+      class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+      onkeydown="if(event.key==='Enter') confirmarClave()"/>
+    <div class="grid grid-cols-2 gap-2">
+      <button onclick="cerrarClave()"
+        class="border border-slate-200 text-slate-600 rounded-xl py-3 font-bold text-sm hover:bg-slate-50 transition">
+        // Cancelar
+      </button>
+      <button onclick="confirmarClave()"
+        class="bg-green-700 text-white rounded-xl py-3 font-bold text-sm hover:bg-green-800 transition">
+        // Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIAR FECHA -->
+<div id="modal-cambiar-fecha" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center px-4">
+  <div class="bg-white rounded-3xl p-6 w-full max-w-sm space-y-4 fade-in">
+    <h3 class="text-lg font-black text-slate-800">📅 Cambiar fecha</h3>
+    <p class="text-xs text-slate-500">El ticket se moverá a la nueva fecha en el sistema y en el Excel.</p>
+    <input id="nueva-fecha-input" type="date"
+      class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    <div class="grid grid-cols-2 gap-2">
+      <button onclick="cerrarCambiarFecha()"
+        class="border border-slate-200 text-slate-600 rounded-xl py-3 font-bold text-sm hover:bg-slate-50 transition">
+        // Cancelar
+      </button>
+      <button onclick="ejecutarCambiarFecha()"
+        class="bg-amber-500 text-white rounded-xl py-3 font-bold text-sm hover:bg-amber-600 transition">
+        // Cambiar fecha
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL VOUCHER IMPRESO ══ -->
+<div id="modal-voucher" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
+  <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl fade-in overflow-hidden">
+    <!-- Header -->
+    <div class="bg-green-600 px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🖨️</span>
+        <div>
+          <p class="text-white font-black text-sm">Voucher impreso</p>
+          <p id="modal-voucher-subtitulo" class="text-green-200 text-xs"></p>
+        </div>
+      </div>
+      <button onclick="cerrarVoucher()" class="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+    </div>
+    <!-- Ticket paper -->
+    <div class="p-4 bg-slate-50 overflow-y-auto max-h-[55vh]">
+      <div id="modal-voucher-paper"
+        class="mx-auto font-mono leading-tight bg-white border border-dashed border-slate-300 rounded-lg p-3 shadow-sm"
+        style="font-size:10px;line-height:1.55;white-space:pre-wrap;word-break:break-word"></div>
+    </div>
+    <!-- Acciones -->
+    <div class="px-4 pb-5 pt-3 space-y-2">
+      <button onclick="abrirHistorialVouchers()" class="w-full border-2 border-slate-200 text-slate-600 rounded-2xl py-2.5 text-sm font-bold hover:bg-slate-50 transition">
+        🧾 Ver historial de vouchers
+      </button>
+      <button onclick="cerrarVoucher()" class="w-full bg-green-600 text-white rounded-2xl py-3 text-sm font-black hover:bg-green-700 transition">
+        ✅ Cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL HISTORIAL VOUCHERS ══ -->
+<div id="modal-hist-vouchers" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
+  <div class="bg-white w-full max-w-lg rounded-t-3xl fade-in max-h-[85vh] flex flex-col">
+    <div class="px-5 py-4 flex items-center justify-between border-b border-slate-100 shrink-0">
+      <h2 class="text-base font-black text-slate-800">🧾 Historial de vouchers</h2>
+      <button onclick="cerrarHistorialVouchers()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div id="hist-vouchers-lista" class="overflow-y-auto flex-1 px-4 py-4 space-y-3"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL REIMPRIMIR ══ -->
+<div id="modal-reimprimir" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
+  <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl fade-in">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <h2 class="text-base font-black text-slate-800">🖨️ Reimprimir ticket</h2>
+        <p id="reimp-subtitulo" class="text-xs text-slate-400 font-mono mt-0.5"></p>
+      </div>
+      <button onclick="cerrarReimp()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div class="px-5 py-5 space-y-4">
+      <p class="text-sm font-semibold text-slate-700">¿Cuántas copias?</p>
+      <div class="grid grid-cols-4 gap-2" id="reimp-copias-btns">
+        <button onclick="selCopias(1)" id="rc-1" class="copias-btn py-4 rounded-2xl border-2 border-green-700 bg-green-700 text-white text-xl font-black transition">1</button>
+        <button onclick="selCopias(2)" id="rc-2" class="copias-btn py-4 rounded-2xl border-2 border-slate-200 text-slate-600 text-xl font-black transition hover:border-green-300">2</button>
+        <button onclick="selCopias(3)" id="rc-3" class="copias-btn py-4 rounded-2xl border-2 border-slate-200 text-slate-600 text-xl font-black transition hover:border-green-300">3</button>
+        <button onclick="selCopias(4)" id="rc-4" class="copias-btn py-4 rounded-2xl border-2 border-slate-200 text-slate-600 text-xl font-black transition hover:border-green-300">4</button>
+      </div>
+      <div id="reimp-estado" class="hidden text-center text-sm font-medium py-2 rounded-xl"></div>
+      <button onclick="confirmarReimp()" id="reimp-btn-ok"
+        class="w-full bg-slate-800 text-white rounded-2xl py-4 text-sm font-black hover:bg-slate-900 active:scale-95 transition shadow-lg">
+        🖨️ Imprimir
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL VER FOTO COBRO ══ -->
+<div id="modal-foto-cobro" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4" onclick="cerrarFotoCobro()">
+  <div class="relative w-full max-w-sm" onclick="event.stopPropagation()">
+    <button onclick="cerrarFotoCobro()" class="absolute -top-10 right-0 text-white/70 hover:text-white text-3xl leading-none">&times;</button>
+    <div class="bg-white rounded-2xl overflow-hidden shadow-2xl">
+      <div class="bg-slate-800 px-4 py-3 flex items-center gap-2">
+        <span class="text-lg">📷</span>
+        <div>
+          <p id="modal-foto-titulo" class="text-white font-bold text-sm"></p>
+          <p id="modal-foto-subtitulo" class="text-slate-400 text-xs"></p>
+        </div>
+      </div>
+      <img id="modal-foto-img" class="w-full object-contain max-h-96" src="" alt="Foto del cobro"/>
+      <div class="px-4 py-3">
+        <a id="modal-foto-link" href="#" target="_blank" rel="noopener"
+          class="block w-full text-center text-xs text-green-600 hover:text-green-700 font-semibold">
+          🔗 Abrir en tamaño completo
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TAB AVISOS ══ -->
+<div id="sec-avisos" class="hidden max-w-lg mx-auto px-4 py-5 space-y-4 pb-24">
+
+  <!-- Buscador + recargar -->
+  <div class="flex gap-2">
+    <div class="relative flex-1">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+      <input id="av-buscar" type="text" placeholder="Buscar código o nombre..."
+        class="w-full pl-9 pr-4 py-3 border border-slate-200 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm"/>
+    </div>
+    <button onclick="avCargar(true)"
+      class="bg-slate-700 text-white px-4 py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition shadow-sm whitespace-nowrap">🔄</button>
+  </div>
+  <p class="text-xs text-slate-400 px-1">Los registros aparecen automáticamente al guardar una Entrada con celular.</p>
+
+  <!-- Filtros -->
+  <div class="flex gap-2">
+    <button id="av-tab-todos"    onclick="avSetFiltro('todos')"    class="flex-1 py-2 text-xs font-bold rounded-xl border-2 border-green-700 text-white bg-green-700 transition">Todos</button>
+    <button id="av-tab-sin"      onclick="avSetFiltro('sin')"      class="flex-1 py-2 text-xs font-bold rounded-xl border-2 border-slate-200 text-slate-500 transition">Sin avisar</button>
+    <button id="av-tab-avisados" onclick="avSetFiltro('avisados')" class="flex-1 py-2 text-xs font-bold rounded-xl border-2 border-slate-200 text-slate-500 transition">Ya avisados</button>
+  </div>
+
+  <!-- Contador -->
+  <p id="av-contador" class="text-xs text-slate-400 font-semibold px-1"></p>
+
+  <!-- Lista -->
+  <div id="av-lista" class="space-y-2"></div>
+  <div id="av-vacio" class="hidden text-center py-16 text-slate-400">
+    <div class="text-5xl mb-3">📭</div>
+    <p class="font-semibold">Sin pedidos</p>
+  </div>
+  <div id="av-loading" class="hidden text-center py-10 text-slate-400">
+    <div class="w-8 h-8 border-4 border-green-700 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+    <p class="text-sm">Cargando...</p>
+  </div>
+</div>
+
+<!-- MODAL NUEVO PEDIDO AVISO -->
+<div id="av-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+  <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 space-y-4 fade-in max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h2 id="av-modal-titulo" class="text-lg font-black text-slate-800">Nuevo pedido</h2>
+      <button onclick="avCerrarModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <input type="hidden" id="av-edit-id"/>
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Código de boleta *</label>
+      <input id="av-f-codigo" type="text" placeholder="Ej: 001" autocomplete="off"
+        class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Nombre del cliente *</label>
+      <div class="relative">
+        <input id="av-f-nombre" type="text" placeholder="Ej: María García" autocomplete="off"
+          oninput="avSugerir(this.value)"
+          class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+        <div id="av-sugerencias" class="hidden absolute z-10 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 overflow-hidden"></div>
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Celular WhatsApp *</label>
+      <div class="flex items-center gap-2 border border-slate-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-green-500">
+        <span class="text-slate-500 font-semibold text-sm">+51</span>
+        <input id="av-f-celular" type="tel" placeholder="987654321"
+          class="flex-1 text-sm focus:outline-none bg-transparent"/>
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">Nota (opcional)</label>
+      <input id="av-f-nota" type="text" placeholder="Ej: ropa delicada..."
+        class="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    </div>
+    <button onclick="avGuardar()"
+      class="w-full bg-green-700 text-white rounded-2xl py-4 font-black hover:bg-green-800 transition">
+      💾 Guardar pedido
+    </button>
+  </div>
+</div>
+
+<!-- MODAL DETALLE AVISO -->
+<div id="av-modal-detalle" class="hidden fixed inset-0 bg-black/50 z-50 flex items-end justify-center">
+  <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 space-y-4 fade-in max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="text-lg font-black text-slate-800">Detalle del pedido</h2>
+      <button onclick="avCerrarDetalle()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+    <div id="av-detalle-contenido" class="space-y-3"></div>
+  </div>
+</div>
+
+<!-- ══ TAB COMPROBANTES ══ -->
+<div id="sec-comprobantes" class="hidden max-w-lg mx-auto px-4 py-5 space-y-4 pb-24">
+
+  <!-- Buscador -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 px-4 py-4">
+    <label class="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Historial de tickets impresos</label>
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+      <input id="comp-buscar" type="text" placeholder="Código o nombre..."
+        oninput="renderComprobantes()"
+        class="w-full pl-9 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+    </div>
+  </div>
+
+  <!-- Contador -->
+  <p id="comp-contador" class="text-xs text-slate-400 font-semibold px-1"></p>
+
+  <!-- Lista -->
+  <div id="comp-lista" class="space-y-2"></div>
+  <div id="comp-vacio" class="hidden text-center py-16 text-slate-400">
+    <div class="text-5xl mb-3">🧾</div>
+    <p class="font-semibold">Sin comprobantes</p>
+    <p class="text-sm">Imprime un ticket de entrada para verlo aquí</p>
+  </div>
+</div>
+
+<!-- MODAL COMPROBANTE DETALLE -->
+<div id="modal-comp" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
+  <div class="bg-white w-full max-w-lg rounded-t-3xl p-6 space-y-4 fade-in max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-black text-slate-800">🧾 Comprobante</h2>
+        <p id="comp-modal-subtitulo" class="text-xs text-slate-400 font-mono mt-0.5"></p>
+      </div>
+      <button onclick="cerrarModalComp()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+    </div>
+
+    <!-- Ticket preview -->
+    <div class="bg-slate-50 rounded-2xl p-4">
+      <div id="comp-ticket-paper"
+        class="mx-auto font-mono bg-white border border-dashed border-slate-300 rounded-lg p-3 shadow-sm"
+        style="font-size:10px;line-height:1.55;white-space:pre-wrap;word-break:break-word"></div>
+    </div>
+
+    <!-- Estado de pago -->
+    <div id="comp-estado-pago" class="rounded-xl px-4 py-3 border text-sm font-bold"></div>
+
+    <!-- Info impresión -->
+    <div class="bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+      <p class="text-xs text-green-700 font-semibold">🕐 Última impresión: <span id="comp-hora-imp"></span></p>
+    </div>
+
+    <!-- Editar ticket -->
+    <div class="space-y-3">
+      <p class="text-sm font-bold text-slate-700">✏️ Editar ticket</p>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del cliente</label>
+        <input id="comp-edit-nombre" type="text"
+          class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      </div>
+      <!-- Artículos -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Artículos y precios</label>
+          <button onclick="compAgregarItem()"
+            class="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-lg font-semibold transition">+ Agregar</button>
+        </div>
+        <div id="comp-items" class="space-y-2"></div>
+        <div class="flex items-center justify-between mt-3 bg-gradient-to-r from-green-700 to-green-800 rounded-xl px-4 py-3 text-white">
+          <span class="font-semibold text-sm">Total</span>
+          <span id="comp-total" class="text-xl font-black">S/ 0.00</span>
+        </div>
+      </div>
+      <button onclick="guardarEdicionComp()"
+        class="w-full bg-green-700 text-white rounded-2xl py-3 font-bold hover:bg-green-800 transition">
+        💾 Guardar cambios
+      </button>
+    </div>
+
+    <!-- Reimprimir -->
+    <div class="space-y-2 pt-2 border-t border-slate-100">
+      <p class="text-sm font-bold text-slate-700">🖨️ Reimprimir</p>
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="reimprimirComp(1)"
+          class="border-2 border-slate-200 text-slate-700 rounded-2xl py-3 text-sm font-bold hover:bg-slate-50 transition">
+          1 copia
+        </button>
+        <button onclick="reimprimirComp(2)"
+          class="border-2 border-slate-200 text-slate-700 rounded-2xl py-3 text-sm font-bold hover:bg-slate-50 transition">
+          2 copias
+        </button>
+        <button onclick="reimprimirComp(3)"
+          class="bg-slate-800 text-white rounded-2xl py-3 text-sm font-bold hover:bg-slate-900 transition">
+          3 copias
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold whitespace-nowrap"></div>
+
+<!-- LOADING OVERLAY -->
+<div id="loading" class="hidden fixed inset-0 bg-white/80 z-40 flex flex-col items-center justify-center gap-3">
+  <div class="w-10 h-10 border-4 border-green-700 border-t-transparent rounded-full animate-spin"></div>
+  <p class="text-sm font-semibold text-slate-600">Guardando en Supabase...</p>
+</div>
+
+<script>
+// ─── UTILS ───────────────────────────────────────────────────
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+
+// Normaliza fechas que vienen de Google Sheets como objetos Date serializados
+// Ej: "2026-06-07T05:00:00.000Z" → "2026-06-07"
+function normFecha(v) {
+  if (!v) return hoy();
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // ya es YYYY-MM-DD
+  if (s.includes('T')) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime()) && d.getFullYear() >= 2020) {
+      // Ajustar a zona Lima (UTC-5)
+      const lima = new Date(d.getTime() - 5*60*60*1000);
+      const pad = n => String(n).padStart(2,'0');
+      return `${lima.getUTCFullYear()}-${pad(lima.getUTCMonth()+1)}-${pad(lima.getUTCDate())}`;
+    }
+    return hoy(); // fecha inválida como 1899-12-30
+  }
+  return s;
+}
+// Normaliza horas — "1899-12-30T15:19:00.000Z" → "10:19"
+function normHora(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{1,2}:\d{2}/.test(s)) return s.substring(0,5); // ya está bien
+  if (s.includes('T')) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const totalMin = d.getUTCHours() * 60 + d.getUTCMinutes() - 300; // UTC→Lima
+      const h = Math.floor(((totalMin % 1440) + 1440) % 1440 / 60);
+      const m = ((totalMin % 1440) + 1440) % 1440 % 60;
+      return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+    }
+  }
+  return s;
+}
+function normalizarEntrada(e) { return e ? { ...e, fecha: normFecha(e.fecha), hora: normHora(e.hora) } : e; }
+function normalizarCobro(c)   { return c ? { ...c, fecha: normFecha(c.fecha), hora: normHora(c.hora) } : c; }
+
+// ─── CONFIG ──────────────────────────────────────────────────
+const IMGBB_KEY    = '5d07a65220256fefd411f1bfca18d8f8';
+const SUPABASE_URL = 'https://gdmgpfymwcfuryecccpy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkbWdwZnltd2NmdXJ5ZWNjY3B5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODMyNzQsImV4cCI6MjA5NTU1OTI3NH0.RFxMrMMcN12rTRk5QO281F5X1MP3A48dOUhhd0pXi84';
+let cfg = { negocio: 'Trigoncio' };
+
+function sbHeaders() {
+  return { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+}
+async function sbGet(path) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: sbHeaders() });
+  if (!r.ok) throw new Error('sbGet ' + r.status);
+  return r.json();
+}
+async function sbPost(table, data) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + table, { method: 'POST', headers: sbHeaders(), body: JSON.stringify(data) });
+  if (!r.ok) throw new Error('sbPost ' + r.status);
+}
+async function sbPatch(table, filter, data) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + filter, { method: 'PATCH', headers: sbHeaders(), body: JSON.stringify(data) });
+  if (!r.ok) throw new Error('sbPatch ' + r.status);
+}
+async function sbDelete(table, filter) {
+  const r = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?' + filter, { method: 'DELETE', headers: sbHeaders() });
+  if (!r.ok) throw new Error('sbDelete ' + r.status);
+}
+
+function cargarCfg() { /* config viene del servidor */ }
+async function guardarConfig() {
+  cfg.negocio = document.getElementById('cfg-negocio').value.trim() || 'Trigoncio';
+  guardarTicketCfg();
+  cerrarConfig();
+  toast('✅ Configuración guardada', 'ok');
+  try {
+    const payload = { codigo: '__config__', nombre: 'config', fecha: hoy(), hora: horaActual(), items: [tkCfg], monto: 0, nota: '', estado: '__config__' };
+    const existe = await sbGet('entradas?codigo=eq.__config__&select=id');
+    if (existe && existe.length > 0) {
+      await sbPatch('entradas', 'codigo=eq.__config__', { items: [tkCfg], nombre: cfg.negocio });
+    } else {
+      await sbPost('entradas', payload);
+    }
+  } catch(e) {}
+}
+async function sbLoadConfig() {
+  try {
+    const rows = await sbGet('entradas?codigo=eq.__config__&select=items,nombre');
+    if (rows && rows.length > 0) {
+      const saved = rows[0].items;
+      if (saved && saved[0]) {
+        Object.assign(tkCfg, saved[0]);
+        if (rows[0].nombre && rows[0].nombre !== 'config') cfg.negocio = rows[0].nombre;
+      }
+    }
+  } catch(e) {}
+}
+function abrirConfig() {
+  document.getElementById('cfg-negocio').value = cfg.negocio;
+  document.getElementById('panel-config').classList.remove('hidden');
+}
+function cerrarConfig() { document.getElementById('panel-config').classList.add('hidden'); }
+
+// ─── HELPERS ─────────────────────────────────────────────────
+function hoy() {
+  const d = new Date(), pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function horaActual() {
+  const d = new Date(), pad = n => String(n).padStart(2,'0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fechaLegible(str) {
+  if (!str) return '';
+  const [y,m,d] = str.split('-');
+  const M = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${d}/${M[+m]}/${y}`;
+}
+function toast(msg, tipo = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold whitespace-nowrap ' +
+    (tipo === 'ok'    ? 'bg-slate-800 text-white' :
+     tipo === 'error' ? 'bg-red-600 text-white' : 'bg-green-700 text-white');
+  t.classList.remove('hidden');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.add('hidden'), 3000);
+}
+function showLoad()  { document.getElementById('loading').classList.remove('hidden'); }
+function hideLoad()  { document.getElementById('loading').classList.add('hidden'); }
+
+// ─── EDITAR TICKET ───────────────────────────────────────────
+let editCodigo = null;
+let itemsEditar = [];
+
+function abrirEditar(codigo) {
+  const entradas = getEntradas();
+  const entrada  = entradas.find(e => e.codigo === codigo);
+  if (!entrada) return;
+
+  editCodigo = codigo;
+  itemsEditar = entrada.items.map((i, idx) => ({ id: Date.now() + idx, desc: i.desc, precio: i.precio }));
+
+  document.getElementById('edit-codigo-label').textContent = '#' + codigo;
+  document.getElementById('edit-nombre').value = entrada.nombre;
+  document.getElementById('edit-nota').value   = entrada.nota || '';
+  renderItemsEditar();
+  document.getElementById('modal-editar').classList.remove('hidden');
+}
+
+function cerrarEditar() {
+  document.getElementById('modal-editar').classList.add('hidden');
+  editCodigo = null;
+  itemsEditar = [];
+}
+
+// ─── OPCIONES AVANZADAS (con contraseña) ─────────────────────
+let _accionClave  = null;
+let _targetCodigo = null; // funciona desde editar modal O desde resumen
+
+// Llamado desde el modal de editar
+function pedirClave(accion) {
+  _targetCodigo = editCodigo;
+  _pedirClaveConCodigo(accion);
+}
+
+// Llamado desde el resumen (sin abrir modal de editar)
+function pedirClaveResumen(accion, codigo) {
+  _targetCodigo = codigo;
+  cerrarOpAvanzadas();
+  _pedirClaveConCodigo(accion);
+}
+
+function _pedirClaveConCodigo(accion) {
+  if (!_targetCodigo) return;
+  _accionClave = accion;
+  document.getElementById('clave-desc').textContent =
+    accion === 'cambiarFecha'
+      ? 'Cambiar la fecha del ticket #' + _targetCodigo
+      : 'Resetear a pendiente y borrar cobro del Excel (#' + _targetCodigo + ')';
+  document.getElementById('clave-input').value = '';
+  document.getElementById('modal-clave').classList.remove('hidden');
+  setTimeout(() => document.getElementById('clave-input').focus(), 100);
+}
+
+function cerrarClave() {
+  document.getElementById('modal-clave').classList.add('hidden');
+  _accionClave = null;
+}
+
+function confirmarClave() {
+  if (document.getElementById('clave-input').value !== 'Maquina369') {
+    toast('Contraseña incorrecta', 'error');
+    document.getElementById('clave-input').value = '';
+    return;
+  }
+  const accion = _accionClave; // guardar antes de cerrar
+  cerrarClave();
+  if (accion === 'cambiarFecha') abrirCambiarFecha();
+  if (accion === 'resetearPago') ejecutarResetearPago();
+}
+
+// Modal opciones avanzadas desde Resumen
+function abrirOpAvanzadas(codigo) {
+  _targetCodigo = codigo;
+  document.getElementById('op-av-codigo').textContent = '#' + codigo;
+  document.getElementById('modal-op-avanzadas').classList.remove('hidden');
+}
+
+function cerrarOpAvanzadas() {
+  document.getElementById('modal-op-avanzadas').classList.add('hidden');
+}
+
+function abrirCambiarFecha() {
+  document.getElementById('nueva-fecha-input').value = hoy();
+  document.getElementById('modal-cambiar-fecha').classList.remove('hidden');
+}
+
+function cerrarCambiarFecha() {
+  document.getElementById('modal-cambiar-fecha').classList.add('hidden');
+}
+
+async function ejecutarCambiarFecha() {
+  const nuevaFecha = document.getElementById('nueva-fecha-input').value;
+  if (!nuevaFecha) { toast('Selecciona una fecha', 'error'); return; }
+  cerrarCambiarFecha();
+  const entradas = getEntradas();
+  const idx = entradas.findIndex(e => e.codigo === _targetCodigo);
+  if (idx < 0) { toast('Ticket #' + _targetCodigo + ' no encontrado — recarga la página', 'error'); return; }
+  entradas[idx].fecha = nuevaFecha;
+  saveEntradas(entradas);
+  await guardarEnSupabaseQuiet({ ...entradas[idx], tipo: 'ENTRADA_EDIT' });
+  if (editCodigo) cerrarEditar();
+  renderEntradas();
+  renderResumen();
+  toast('📅 Fecha cambiada a ' + nuevaFecha);
+}
+
+async function ejecutarResetearPago() {
+  const entradas = getEntradas();
+  const idx = entradas.findIndex(e => e.codigo === _targetCodigo);
+  if (idx < 0) { toast('Ticket #' + _targetCodigo + ' no encontrado — recarga la página', 'error'); return; }
+  // Resetear estado en memoria
+  entradas[idx].estado = 'pendiente';
+  saveEntradas(entradas);
+  // Borrar cobro de memoria usando código + nombre para no afectar a otro cliente con mismo código
+  const targetNombre = (entradas[idx].nombre || '').toLowerCase().trim();
+  saveCobros(getCobros().filter(c => !(c.codigoEntrada === _targetCodigo && (c.nombre||'').toLowerCase().trim() === targetNombre)));
+  // Enviar ambos cambios al Excel sin toasts intermedios
+  await guardarEnSupabaseQuiet({ ...entradas[idx], tipo: 'ENTRADA_EDIT' });
+  await guardarEnSupabaseQuiet({ tipo: 'COBRO_DELETE', codigoEntrada: _targetCodigo, nombre: entradas[idx].nombre });
+  if (editCodigo) cerrarEditar();
+  renderEntradas();
+  renderPendientes();
+  renderResumen();
+  toast('🔄 Cobro eliminado y ticket reseteado a pendiente');
+}
+
+function agregarItemEditar(desc='', precio='') {
+  const id = Date.now();
+  itemsEditar.push({ id, desc, precio });
+  renderItemsEditar();
+  setTimeout(() => document.getElementById('edi-desc-'+id)?.focus(), 30);
+}
+
+function eliminarItemEditar(id) {
+  itemsEditar = itemsEditar.filter(i => i.id !== id);
+  renderItemsEditar();
+}
+
+function actualizarItemEditar(id, campo, val) {
+  const i = itemsEditar.find(x => x.id === id);
+  if (i) i[campo] = val;
+  calcularTotalEditar();
+}
+
+function calcularTotalEditar() {
+  const t = itemsEditar.reduce((s,i) => s + (parseFloat(i.precio)||0), 0);
+  document.getElementById('edit-total').textContent = 'S/ ' + t.toFixed(2);
+  return t;
+}
+
+function renderItemsEditar() {
+  const lista = document.getElementById('edit-items');
+  lista.innerHTML = '';
+  itemsEditar.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'flex gap-2 items-center fade-in';
+    row.innerHTML = `
+      <span class="text-xs text-slate-400 w-4 shrink-0 font-semibold">${idx+1}.</span>
+      <input id="edi-desc-${item.id}" type="text" placeholder="Artículo" value="${item.desc}"
+        oninput="actualizarItemEditar(${item.id},'desc',this.value)"
+        class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      <div class="flex items-center gap-1 shrink-0 border border-slate-200 rounded-xl px-2 focus-within:border-green-500 transition">
+        <span class="text-xs text-slate-400 font-bold">S/</span>
+        <input type="number" min="0" step="0.50" placeholder="0" value="${item.precio}"
+          oninput="actualizarItemEditar(${item.id},'precio',this.value)"
+          class="w-16 py-2 text-sm text-right font-semibold focus:outline-none bg-transparent"/>
+      </div>
+      <button onclick="eliminarItemEditar(${item.id})" class="text-slate-300 hover:text-red-400 text-xl leading-none shrink-0 transition">×</button>`;
+    lista.appendChild(row);
+  });
+  calcularTotalEditar();
+}
+
+async function guardarEdicion() {
+  if (!editCodigo) return;
+  if (itemsEditar.length === 0) { toast('Agrega al menos un artículo','error'); return; }
+
+  const entradas = getEntradas();
+  const idx = entradas.findIndex(e => e.codigo === editCodigo);
+  if (idx < 0) { toast('Ticket #' + editCodigo + ' no encontrado — recarga la página', 'error'); return; }
+
+  const items  = itemsEditar.map(i => ({ desc: i.desc||'—', precio: parseFloat(i.precio)||0 }));
+  const monto  = items.reduce((s,i) => s+i.precio, 0);
+  const nombre = document.getElementById('edit-nombre').value.trim() || entradas[idx].nombre;
+  const nota   = document.getElementById('edit-nota').value.trim();
+
+  entradas[idx] = { ...entradas[idx], nombre, items, monto, nota };
+  saveEntradas(entradas);
+
+  // Actualizar en Sheets — busca por codigo y actualiza la fila existente
+  _sbFire({ ...entradas[idx], tipo: 'ENTRADA_EDIT' });
+
+  cerrarEditar();
+  renderPendientes();
+  toast('✅ Ticket actualizado');
+}
+
+// ─── TABS ────────────────────────────────────────────────────
+function irTab(tab) {
+  ['entrada','cobro','comprobantes','resumen','avisos'].forEach(t => {
+    document.getElementById('sec-' + t).classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById('tab-' + t);
+    if (!btn) return;
+    if (t === tab) { btn.classList.add('tab-activo'); btn.classList.remove('text-green-200'); }
+    else           { btn.classList.remove('tab-activo'); btn.classList.add('text-green-200'); }
+  });
+  if (tab === 'cobro')         renderPendientes();
+  if (tab === 'comprobantes')  renderComprobantes();
+  if (tab === 'resumen')       { document.getElementById('r-fecha').value = hoy(); renderResumen(); }
+  if (tab === 'avisos')        { if (!avCargado) avCargar(); else avRender(); }
+}
+
+// ─── COMPROBANTES (historial de tickets impresos) ─────────────
+let compActual = null;
+
+function renderComprobantes() {
+  const q = (document.getElementById('comp-buscar').value||'').toLowerCase().trim();
+  // Fuente de datos: entradas del servidor, ordenadas más reciente primero
+  let entradas = getEntradas().slice().sort((a, b) => {
+    const ta = (a.registradoEn || a.fecha + 'T' + (a.hora||'00:00'));
+    const tb = (b.registradoEn || b.fecha + 'T' + (b.hora||'00:00'));
+    return tb.localeCompare(ta);
+  });
+
+  if (q) entradas = entradas.filter(e =>
+    (e.codigo||'').includes(q) || (e.nombre||'').toLowerCase().includes(q));
+
+  const lista = document.getElementById('comp-lista');
+  const vacio = document.getElementById('comp-vacio');
+  document.getElementById('comp-contador').textContent =
+    entradas.length + ' comprobante' + (entradas.length !== 1 ? 's' : '');
+  lista.innerHTML = '';
+
+  if (entradas.length === 0) {
+    vacio.classList.remove('hidden');
+    if (getEntradas().length === 0) {
+      vacio.querySelector?.('p') && (vacio.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Cargando desde servidor…</p>');
+    }
+    return;
+  }
+  vacio.classList.add('hidden');
+
+  entradas.forEach(e => {
+    const card = document.createElement('div');
+    const cobrado = e.estado === 'cobrado';
+    card.className = `rounded-2xl border shadow-sm px-4 py-3.5 fade-in ${cobrado ? 'bg-green-50 border-green-200' : 'bg-white border-slate-100'}`;
+    const estadoBadge = cobrado
+      ? '<span class="text-xs font-bold bg-green-200 text-green-800 px-2 py-0.5 rounded-lg">✅ Pagada</span>'
+      : '<span class="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg">⏳ Pendiente</span>';
+    card.innerHTML = `
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="font-black font-mono text-green-700">#${e.codigo}</span>
+            ${estadoBadge}
+            <span class="text-xs text-slate-400">${e.fecha||''} ${e.hora||''}</span>
+          </div>
+          <p class="font-semibold text-slate-800 text-sm truncate">${e.nombre}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${(e.items||[]).map(i=>i.desc).join(', ').substring(0,40)}</p>
+        </div>
+        <div class="flex flex-col items-end gap-2 shrink-0">
+          <p class="font-black text-slate-800">S/ ${parseFloat(e.monto||0).toFixed(2)}</p>
+          <button onclick="abrirModalComp('${e.codigo}')"
+            class="text-xs bg-green-700 text-white px-3 py-1.5 rounded-xl font-bold hover:bg-green-800 transition">
+            🧾 Ver
+          </button>
+        </div>
+      </div>`;
+    lista.appendChild(card);
+  });
+}
+
+let compItems = [];
+
+function abrirModalComp(codigo) {
+  const entrada = getEntradas().find(e => e.codigo === String(codigo));
+  if (!entrada) { toast('Ticket no encontrado','error'); return; }
+  compActual = { ...entrada, codigo: entrada.codigo };
+
+  document.getElementById('comp-modal-subtitulo').textContent = '#'+entrada.codigo+' · '+entrada.nombre;
+  document.getElementById('comp-hora-imp').textContent = (entrada.fecha||'') + ' ' + (entrada.hora||'');
+  document.getElementById('comp-edit-nombre').value = entrada.nombre;
+
+  // Cargar artículos
+  compItems = (entrada.items || []).map((i, idx2) => ({
+    id: Date.now() + idx2, desc: i.desc, precio: i.precio
+  }));
+  renderCompItems();
+
+  // Generar ticket desde los datos del servidor (igual al original)
+  const lineas = generarLineasVoucher(entrada);
+  renderTicketPaper('comp-ticket-paper', lineas);
+  const cobro = getCobros().find(c =>
+    c.codigoEntrada === entrada.codigo &&
+    (c.nombre||'').toLowerCase().trim() === (entrada.nombre||'').toLowerCase().trim()
+  );
+  const cobrado = entrada.estado === 'cobrado' || !!cobro;
+  const estDiv = document.getElementById('comp-estado-pago');
+  if (estDiv) {
+    if (cobrado) {
+      const metodo = cobro?.metodo === 'yape' ? '📱 Yape' : cobro?.metodo === 'efectivo' ? '💵 Efectivo' : '';
+      estDiv.className = 'rounded-xl px-4 py-3 border text-sm font-bold bg-green-50 border-green-300 text-green-800';
+      estDiv.textContent = '✅ PAGADA' + (metodo ? ' — ' + metodo : '');
+    } else {
+      estDiv.className = 'rounded-xl px-4 py-3 border text-sm font-bold bg-amber-50 border-amber-300 text-amber-800';
+      estDiv.textContent = '⏳ PENDIENTE de pago';
+    }
+  }
+  document.getElementById('modal-comp').classList.remove('hidden');
+}
+
+function renderCompItems() {
+  const lista = document.getElementById('comp-items');
+  lista.innerHTML = '';
+  compItems.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'flex gap-2 items-center fade-in';
+    row.innerHTML = `
+      <span class="text-xs text-slate-400 w-4 shrink-0 font-semibold">${idx+1}.</span>
+      <input type="text" placeholder="Artículo" value="${item.desc}"
+        oninput="compActualizarItem(${item.id},'desc',this.value)"
+        class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      <div class="flex items-center gap-1 shrink-0 border border-slate-200 rounded-xl px-2 focus-within:border-green-500">
+        <span class="text-xs text-slate-400 font-bold">S/</span>
+        <input type="number" min="0" step="0.50" placeholder="0" value="${item.precio}"
+          oninput="compActualizarItem(${item.id},'precio',this.value)"
+          class="w-16 py-2 text-sm text-right font-semibold focus:outline-none bg-transparent"/>
+      </div>
+      <button onclick="compEliminarItem(${item.id})" class="text-slate-300 hover:text-red-400 text-xl leading-none shrink-0">×</button>`;
+    lista.appendChild(row);
+  });
+  compCalcTotal();
+}
+
+function compAgregarItem() {
+  compItems.push({ id: Date.now(), desc: '', precio: 0 });
+  renderCompItems();
+}
+
+function compEliminarItem(id) {
+  compItems = compItems.filter(i => i.id !== id);
+  renderCompItems();
+}
+
+function compActualizarItem(id, campo, val) {
+  const i = compItems.find(x => x.id === id);
+  if (i) i[campo] = campo === 'precio' ? parseFloat(val)||0 : val;
+  compCalcTotal();
+}
+
+function compCalcTotal() {
+  const t = compItems.reduce((s,i) => s + (parseFloat(i.precio)||0), 0);
+  document.getElementById('comp-total').textContent = 'S/ ' + t.toFixed(2);
+  return t;
+}
+
+async function guardarEdicionComp() {
+  if (!compActual) return;
+
+  const nuevoNombre = document.getElementById('comp-edit-nombre').value.trim() || compActual.nombre;
+  const nuevosItems = compItems.map(i => ({ desc: i.desc||'—', precio: parseFloat(i.precio)||0 }));
+  const nuevoMonto  = nuevosItems.reduce((s,i) => s+i.precio, 0);
+
+  // Actualizar entrada en memoria
+  const entradas = getEntradas();
+  const eIdx = entradas.findIndex(e => e.codigo === compActual.codigo);
+  if (eIdx >= 0) {
+    entradas[eIdx].nombre = nuevoNombre;
+    entradas[eIdx].items  = nuevosItems;
+    entradas[eIdx].monto  = nuevoMonto;
+    saveEntradas(entradas);
+  }
+
+  // Actualizar compActual y regenerar ticket en modal
+  compActual = { ...compActual, nombre: nuevoNombre, items: nuevosItems, monto: nuevoMonto };
+  const lineas = generarLineasVoucher(compActual);
+  renderTicketPaper('comp-ticket-paper', lineas);
+  renderComprobantes();
+
+  _sbFire({ ...compActual, tipo: 'ENTRADA_EDIT' });
+  toast('✅ Comprobante actualizado');
+}
+
+async function reimprimirComp(copias) {
+  if (!compActual) return;
+  if (!navigator.bluetooth) { toast('Requiere Chrome con Bluetooth','error'); return; }
+
+  if (!btChar) {
+    toast('Conectando impresora...');
+    const ok = await conectarBT();
+    if (!ok) { toast('No se pudo conectar','error'); return; }
+  }
+
+  // Reconstruir bytes desde la entrada original
+  const entrada = getEntradas().find(e => e.codigo === compActual.codigo);
+  if (!entrada) { toast('Ticket no encontrado','error'); return; }
+  const bytes = construirTicketEntrada(entrada);
+
+  for (let i = 0; i < copias; i++) {
+    const ok = await enviarBT(bytes);
+    if (!ok) { toast('Error al imprimir','error'); return; }
+    if (i < copias - 1) await new Promise(r => setTimeout(r, 800));
+  }
+  toast(`🖨️ ${copias} copia${copias > 1 ? 's' : ''} impresas`);
+}
+
+function cerrarModalComp() {
+  document.getElementById('modal-comp').classList.add('hidden');
+  compActual = null;
+}
+
+// ─── STORAGE EN MEMORIA (todo viene del servidor) ────────────
+let _entradasMem = [];
+let _cobrosMem   = [];
+let _vouchersMem = [];
+let _avCacheMem  = null;
+const AV_CACHE_TTL = 5 * 60 * 1000;
+
+function getEntradas()   { return _entradasMem; }
+function getCobros()     { return _cobrosMem;   }
+function saveEntradas(d) { _entradasMem = d;    }
+function saveCobros(d)   { _cobrosMem   = d;    }
+
+// ─── CÓDIGO AUTO — siempre desde el servidor ─────────────────
+async function nuevoCodigoEntrada() {
+  const el = document.getElementById('entrada-codigo');
+  if (el) el.textContent = '...';
+  try {
+    const rows = await sbGet('entradas?select=codigo');
+    let max = 0;
+    (rows || []).forEach(r => { const n = parseInt(r.codigo)||0; if(n>max) max=n; });
+    const sig = String(max + 1).padStart(3, '0');
+    if (el) el.textContent = sig;
+    return sig;
+  } catch(e) {
+    if (el) el.textContent = '⚠️ Sin red';
+    return null;
+  }
+}
+
+function avanzarCodigo() {
+  nuevoCodigoEntrada();
+}
+
+// ─── SUGERENCIAS NOMBRE ──────────────────────────────────────
+function sugerirNombre(q) {
+  const box = document.getElementById('e-sugerencias');
+  if (!q || q.length < 2) { box.classList.add('hidden'); return; }
+  const entradas = getEntradas();
+  const nombres = [...new Set(entradas.map(e => e.nombre))].filter(n => n.toLowerCase().includes(q.toLowerCase())).slice(0,4);
+  if (!nombres.length) { box.classList.add('hidden'); return; }
+  box.innerHTML = nombres.map(n =>
+    `<div onclick="document.getElementById('e-nombre').value='${n.replace(/'/g,"\\'")}'; // document.getElementById('e-sugerencias').classList.add('hidden')"
+       class="px-4 py-2.5 text-sm hover:bg-green-50 cursor-pointer border-b border-slate-100 last:border-0 font-medium text-slate-800">${n}</div>`
+  ).join('');
+  box.classList.remove('hidden');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#e-nombre') && !e.target.closest('#e-sugerencias'))
+    document.getElementById('e-sugerencias').classList.add('hidden');
+});
+
+// ─── ITEMS ENTRADA ───────────────────────────────────────────
+let itemsEntrada = [];
+
+function agregarItemEntrada(desc='', precio='') {
+  const id = Date.now();
+  itemsEntrada.push({id, desc, precio});
+  renderItemsEntrada();
+  setTimeout(() => document.getElementById('ei-desc-'+id)?.focus(), 30);
+}
+function eliminarItemEntrada(id) { itemsEntrada = itemsEntrada.filter(i => i.id !== id); renderItemsEntrada(); }
+function actualizarItemEntrada(id, campo, val) {
+  const i = itemsEntrada.find(x => x.id === id);
+  if (i) i[campo] = val;
+  calcularTotalEntrada();
+  actualizarPreview();
+}
+function calcularTotalEntrada() {
+  const t = itemsEntrada.reduce((s,i) => s + (parseFloat(i.precio)||0), 0);
+  document.getElementById('e-total').textContent = 'S/ ' + t.toFixed(2);
+  return t;
+}
+function renderItemsEntrada() {
+  const lista = document.getElementById('e-items');
+  lista.innerHTML = '';
+  itemsEntrada.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'flex gap-2 items-center fade-in';
+    row.innerHTML = `
+      <span class="text-xs text-slate-400 w-4 shrink-0 font-semibold">${idx+1}.</span>
+      <input id="ei-desc-${item.id}" type="text" placeholder="Artículo" value="${item.desc}"
+        oninput="actualizarItemEntrada(${item.id},'desc',this.value)"
+        class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"/>
+      <div class="flex items-center gap-1 shrink-0 border border-slate-200 rounded-xl px-2 focus-within:border-green-500 transition">
+        <span class="text-xs text-slate-400 font-bold">S/</span>
+        <input type="number" min="0" step="0.50" placeholder="0" value="${item.precio}"
+          oninput="actualizarItemEntrada(${item.id},'precio',this.value)"
+          class="w-16 py-2 text-sm text-right font-semibold focus:outline-none bg-transparent"/>
+      </div>
+      <button onclick="eliminarItemEntrada(${item.id})" class="text-slate-300 hover:text-red-400 text-xl leading-none shrink-0 transition">×</button>`;
+    lista.appendChild(row);
+  });
+  calcularTotalEntrada();
+}
+
+// ─── REGISTRAR ENTRADA ───────────────────────────────────────
+async function registrarEntrada() {
+  const nombre = document.getElementById('e-nombre').value.trim();
+  if (!nombre) { toast('Ingresa el nombre del cliente','error'); document.getElementById('e-nombre').focus(); return; }
+  if (itemsEntrada.length === 0) { toast('Agrega al menos un artículo','error'); return; }
+
+  const codigo = document.getElementById('entrada-codigo').textContent.trim();
+  if (!codigo || codigo === '...' || codigo.includes('⚠️')) {
+    toast('Esperando código del servidor… verifica tu conexión','error'); return;
+  }
+  const entrada = {
+    tipo:        'ENTRADA',
+    codigo,
+    nombre,
+    fecha:       document.getElementById('e-fecha').value || hoy(),
+    hora:        document.getElementById('e-hora').value  || horaActual(),
+    items:       itemsEntrada.map(i => ({ desc: i.desc||'—', precio: parseFloat(i.precio)||0 })),
+    monto:       calcularTotalEntrada(),
+    celular:     document.getElementById('e-celular').value.trim().replace(/\D/g,''),
+    nota:        document.getElementById('e-nota').value.trim(),
+    estado:      'pendiente',
+    registradoEn: new Date().toISOString(),
+  };
+
+  // Guardar local
+  const entradas = getEntradas();
+  entradas.unshift(entrada);
+  saveEntradas(entradas);
+
+  // Guardar en Supabase sin bloquear
+  _sbFire(entrada);
+  const elCodReg = document.getElementById('entrada-codigo');
+  if (elCodReg) {
+    const maxCod = getEntradas().reduce((m, e) => Math.max(m, parseInt(e.codigo)||0), 0);
+    elCodReg.textContent = String(maxCod + 1).padStart(3, '0');
+  }
+  document.getElementById('e-nombre').value  = '';
+  document.getElementById('e-celular').value = '';
+  document.getElementById('e-nota').value   = '';
+  document.getElementById('e-fecha').value  = hoy();
+  document.getElementById('e-hora').value   = horaActual();
+  itemsEntrada = [];
+  renderItemsEntrada();
+  toast('✅ Entrada registrada — #' + codigo);
+  return entrada;
+}
+
+// ─── BLUETOOTH PRINT ─────────────────────────────────────────
+const BT_SERVICES = [
+  '000018f0-0000-1000-8000-00805f9b34fb',
+  '0000ff00-0000-1000-8000-00805f9b34fb',
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+  '0000ff12-0000-1000-8000-00805f9b34fb',
+];
+let btDevice = null, btChar = null;
+
+async function conectarBT() {
+  try {
+    // Muestra TODOS los dispositivos BT disponibles, con los servicios como opcionales
+    btDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: BT_SERVICES
+    });
+    const server = await btDevice.gatt.connect();
+
+    // Intenta cada servicio conocido
+    for (const svc of BT_SERVICES) {
+      try {
+        const service = await server.getPrimaryService(svc);
+        const chars = await service.getCharacteristics();
+        const c = chars.find(x => x.properties.writeWithoutResponse || x.properties.write) || chars[0];
+        if (c) { btChar = c; return true; }
+      } catch(e) { continue; }
+    }
+
+    // Si ningún UUID coincide, intenta con el primer servicio que tenga
+    try {
+      const services = await server.getPrimaryServices();
+      for (const service of services) {
+        const chars = await service.getCharacteristics();
+        const c = chars.find(x => x.properties.writeWithoutResponse || x.properties.write) || chars[0];
+        if (c) { btChar = c; return true; }
+      }
+    } catch(e) {}
+
+    return false;
+  } catch(e) {
+    console.error('BT error:', e);
+    return false;
+  }
+}
+
+async function enviarBT(bytes) {
+  if (!btChar) { toast('No hay impresora conectada','error'); return false; }
+  const CHUNK = 20;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    const chunk = bytes.slice(i, i + CHUNK);
+    if (btChar.properties.writeWithoutResponse) {
+      await btChar.writeValueWithoutResponse(new Uint8Array(chunk));
+      await new Promise(r => setTimeout(r, 20));
+    } else {
+      await btChar.writeValueWithResponse(new Uint8Array(chunk));
+    }
+  }
+  return true;
+}
+
+function construirTicketEntrada(e) {
+  // Usa el mismo formato y helpers que tkConstruirBytes para consistencia
+  const ticket = {
+    codigo: e.codigo,
+    nombre: e.nombre,
+    fecha:  e.fecha,
+    hora:   e.hora,
+    items:  e.items,
+    total:  e.monto,
+    nota:   e.nota,
+  };
+  return Array.from(tkConstruirBytes(ticket));
+}
+
+async function registrarEImprimir() {
+  if (!navigator.bluetooth) {
+    toast('Tu navegador no soporta Bluetooth. Usa Chrome.','error'); return;
+  }
+  const nombre = document.getElementById('e-nombre').value.trim();
+  if (!nombre) { toast('Ingresa el nombre del cliente','error'); return; }
+  if (itemsEntrada.length === 0) { toast('Agrega al menos un artículo','error'); return; }
+  const codigoCheck = document.getElementById('entrada-codigo').textContent.trim();
+  if (!codigoCheck || codigoCheck === '...' || codigoCheck.includes('⚠️')) {
+    toast('Esperando código del servidor… verifica tu conexión','error'); return;
+  }
+
+  if (!btChar) {
+    toast('Conectando impresora...');
+    const ok = await conectarBT();
+    if (!ok) { toast('No se pudo conectar la impresora','error'); return; }
+  }
+
+  const entrada = await registrarEntrada();
+  if (!entrada) return;
+
+  const bytes = construirTicketEntrada(entrada);
+  // Imprimir 3 copias
+  const impreso = await enviarBT(bytes);
+  if (impreso) {
+    await new Promise(r => setTimeout(r, 400)); // pausa entre copias
+    await enviarBT(bytes);
+    await new Promise(r => setTimeout(r, 400)); // pausa entre copias
+    await enviarBT(bytes);
+    toast('🖨️ 3 copias impresas correctamente');
+    // Guardar voucher y mostrarlo
+    const lineas = generarLineasVoucher(entrada);
+    guardarVoucher(entrada, lineas);
+    setTimeout(() => mostrarVoucher({
+      codigo: entrada.codigo, nombre: entrada.nombre,
+      monto: entrada.monto, impreso_en: new Date().toISOString(),
+      texto: lineas.join('\n'),
+    }), 400);
+  }
+}
+
+function tkCfgToData() {
+  return {
+    negocio:         tkCfg.negocio        || cfg.negocio || 'Trigoncio',
+    tamanoNegocio:   tkCfg.tamanoNegocio  || 1,
+    boldNegocio:     tkCfg.boldNegocio    !== false,
+    subtitulo:       tkCfg.subtitulo      || '',
+    direccion:       tkCfg.direccion      || '',
+    telefono:        tkCfg.telefono       || '',
+    extraCabecera:   tkCfg.extraCabecera  || '',
+    tituloTicket:    tkCfg.tituloTicket   || 'TICKET DE INGRESO',
+    etiquetaNum:     tkCfg.etiquetaNum    || '',
+    pie:             tkCfg.pie            || 'Gracias por su preferencia',
+    notasPie:        tkCfg.notasPie       || '',
+    simbolo:         tkCfg.simbolo        || '* * *',
+    separador:       tkCfg.separador      || '-',
+    mostrarHora:     tkCfg.mostrarHora    !== false,
+    mostrarCabecera: tkCfg.mostrarCabecera !== false,
+  };
+}
+
+function generarLineasVoucher(entrada) {
+  const meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const [y,m,d] = (entrada.fecha || '').split('-');
+  const fechaFmt = d ? `${d}/${meses[parseInt(m)]}/${y}` : '';
+  return buildTicketLines({
+    ...tkCfgToData(),
+    codigo:   entrada.codigo,
+    nombre:   entrada.nombre,
+    fechaFmt,
+    hora:     entrada.hora,
+    items:    entrada.items,
+    total:    entrada.monto,
+    nota:     entrada.nota || '',
+  });
+}
+
+// ─── TICKET CONFIG (compartido con Entrada) ──────────────────
+let tkCfg = {
+  negocio: 'Trigoncio', subtitulo: '', logo: null,
+  tamanoNegocio: 1, boldNegocio: true,
+  direccion: '', telefono: '', extraCabecera: '',
+  tituloTicket: 'TICKET DE INGRESO', etiquetaNum: '',
+  pie: 'Gracias por su preferencia',
+  notasPie: '', simbolo: '* * *', separador: '-',
+  mostrarHora: true, mostrarCabecera: true, tamanoFuente: 'normal',
+};
+function getTKW() { return tkCfg.tamanoFuente === 'pequeño' ? 56 : 42; }
+function cargarTicketCfg() {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+  _aplicarTamNeg(tkCfg.tamanoNegocio || 1);
+  const chkBold = document.getElementById('cfg-bold-negocio');
+  if (chkBold) chkBold.checked = tkCfg.boldNegocio !== false;
+  set('cfg-subtitulo',       tkCfg.subtitulo     || '');
+  set('cfg-direccion',       tkCfg.direccion     || '');
+  set('cfg-telefono',        tkCfg.telefono      || '');
+  set('cfg-extra-cabecera',  tkCfg.extraCabecera || '');
+  set('cfg-titulo-ticket',   tkCfg.tituloTicket  || '');
+  set('cfg-etiqueta-num',    tkCfg.etiquetaNum   || '');
+  set('cfg-pie',             tkCfg.pie           || '');
+  set('cfg-notas-pie',       tkCfg.notasPie      || '');
+  set('cfg-simbolo',         tkCfg.simbolo       || '');
+  set('cfg-separador',       tkCfg.separador     || '-');
+  set('cfg-tamano-fuente',   tkCfg.tamanoFuente  || 'normal');
+  setChk('cfg-mostrar-hora',     tkCfg.mostrarHora     !== false);
+  setChk('cfg-mostrar-cabecera', tkCfg.mostrarCabecera !== false);
+  if (tkCfg.logo) {
+    document.getElementById('logo-placeholder')?.classList.add('hidden');
+    const img = document.getElementById('logo-preview');
+    if (img) { img.src = tkCfg.logo; img.classList.remove('hidden'); }
+  }
+  actualizarPreview();
+  actualizarPreviewCfg();
+}
+function guardarTicketCfg() {
+  const get    = id => (document.getElementById(id)?.value || '').trim();
+  const getChk = id => document.getElementById(id)?.checked !== false;
+  tkCfg.negocio         = cfg.negocio || 'Trigoncio';
+  tkCfg.tamanoNegocio   = tkCfg.tamanoNegocio || 1;
+  tkCfg.boldNegocio     = document.getElementById('cfg-bold-negocio')?.checked !== false;
+  tkCfg.subtitulo       = get('cfg-subtitulo');
+  tkCfg.direccion       = get('cfg-direccion');
+  tkCfg.telefono        = get('cfg-telefono');
+  tkCfg.extraCabecera   = get('cfg-extra-cabecera');
+  tkCfg.tituloTicket    = get('cfg-titulo-ticket')  || 'TICKET DE INGRESO';
+  tkCfg.etiquetaNum     = get('cfg-etiqueta-num');
+  tkCfg.pie             = get('cfg-pie')            || 'Gracias por su preferencia';
+  tkCfg.notasPie        = get('cfg-notas-pie');
+  tkCfg.simbolo         = get('cfg-simbolo')        || '* * *';
+  tkCfg.separador       = get('cfg-separador')      || '-';
+  tkCfg.tamanoFuente    = get('cfg-tamano-fuente')  || 'normal';
+  tkCfg.mostrarHora     = getChk('cfg-mostrar-hora');
+  tkCfg.mostrarCabecera = getChk('cfg-mostrar-cabecera');
+  actualizarPreview();
+  actualizarPreviewCfg();
+}
+
+function cargarLogo(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    tkCfg.logo = e.target.result; guardarTicketCfg();
+    document.getElementById('logo-placeholder')?.classList.add('hidden');
+    const img = document.getElementById('logo-preview');
+    if (img) { img.src = tkCfg.logo; img.classList.remove('hidden'); }
+  };
+  reader.readAsDataURL(file);
+}
+function quitarLogo() {
+  tkCfg.logo = null; guardarTicketCfg();
+  document.getElementById('logo-placeholder')?.classList.remove('hidden');
+  const img = document.getElementById('logo-preview');
+  if (img) { img.classList.add('hidden'); img.src = ''; }
+  const inp = document.getElementById('input-logo');
+  if (inp) inp.value = '';
+}
+// Word wrap
+function wordWrap(text, w) {
+  w = w || getTKW();
+  const words = String(text).split(' '), lines = [];
+  let cur = '';
+  for (const word of words) {
+    const test = cur ? cur + ' ' + word : word;
+    if (test.length <= w) { cur = test; }
+    else {
+      if (cur) lines.push(cur);
+      let rem = word;
+      while (rem.length > w) { lines.push(rem.slice(0,w)); rem = rem.slice(w); }
+      cur = rem;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+// buildTicketLines — genera líneas de texto del ticket (para preview)
+function buildTicketLines(data) {
+  const W = getTKW(), sep = (data.separador || tkCfg.separador || '-').repeat(W);
+  const c = t => { const s=String(t).slice(0,W); const pad=Math.max(0,Math.floor((W-s.length)/2)); return ' '.repeat(pad)+s; };
+  const cWrap = t => wordWrap(String(t), W).map(l => c(l));
+  const iLinea = (desc, precio) => { const p='S/'+parseFloat(precio||0).toFixed(2); const d=String(desc||'').slice(0,W-p.length-1); return d+' '.repeat(Math.max(1,W-d.length-p.length))+p; };
+  const wrapLeft = (prefix, text) => { const full=prefix+text; if(full.length<=W)return[full]; const first=full.slice(0,W); const rest=wordWrap(text.slice(W-prefix.length),W); return[first,...rest.map(l=>' '.repeat(prefix.length)+l)]; };
+
+  // Nombre negocio — sin espaciado artificial, solo centrado normal
+  const negText = String(data.negocio||'').toUpperCase();
+  let lines = ['', c(negText)];
+  // Subtítulo / slogan
+  if (data.subtitulo) lines.push(...cWrap(data.subtitulo));
+  // Dirección y teléfono
+  if (data.direccion) lines.push(...cWrap(data.direccion));
+  if (data.telefono)  lines.push(...cWrap(data.telefono));
+  // Líneas extra de cabecera (servicios, etc.) — cada línea del textarea
+  if (data.extraCabecera) {
+    data.extraCabecera.split('\n').filter(l=>l.trim()).forEach(l => lines.push(...cWrap(l.trim())));
+  }
+
+  // Separador + título
+  lines.push('', sep, ...cWrap(data.tituloTicket||'TICKET DE INGRESO'), sep, '');
+
+  // Número de ticket (con etiqueta opcional)
+  const etiq = data.etiquetaNum ? data.etiquetaNum + ' ' : '';
+  lines.push(c(etiq + (data.codigo||'---')), '');
+
+  // Datos del cliente
+  lines.push(...wrapLeft('Cliente: ', data.nombre||''), 'Fecha:   '+(data.fechaFmt||''));
+  if (data.mostrarHora !== false) lines.push('Hora:    '+(data.hora||'--:--'));
+  lines.push('', sep);
+
+  // Artículos
+  if (data.mostrarCabecera !== false) lines.push('ARTICULO'+' '.repeat(W-8-6)+'PRECIO', sep);
+  (data.items||[]).forEach(i => lines.push(iLinea(i.desc, i.precio)));
+  lines.push(sep, iLinea('TOTAL', data.total||0), '');
+  if (data.nota) lines.push(...wrapLeft('Nota: ', data.nota));
+
+  // Pie principal
+  lines.push('', ...cWrap(data.pie||'Gracias por su preferencia'));
+
+  // Notas / condiciones al pie (letras pequeñas)
+  if (data.notasPie) {
+    lines.push(sep);
+    data.notasPie.split('\n').filter(l=>l.trim()).forEach(l => {
+      wordWrap(l.trim(), W).forEach(wl => lines.push(wl));
+    });
+  }
+
+  lines.push('', c(data.simbolo||'* * *'));
+  return lines;
+}
+// ESC/POS para impresora térmica
+const TK_ESC=0x1B, TK_GS=0x1D;
+const TK_CMD = {
+  init:[TK_ESC,0x40], codepage:[TK_ESC,0x74,0x10],
+  left:[TK_ESC,0x61,0x00], center:[TK_ESC,0x61,0x01],
+  boldOn:[TK_ESC,0x45,0x01], boldOff:[TK_ESC,0x45,0x00],
+  dblSize:[TK_GS,0x21,0x11], normalSize:[TK_GS,0x21,0x00],
+  cut:[TK_GS,0x56,0x42,0x00], lf:[0x0A],
+};
+const TK_ACCENT={'á':0xE1,'é':0xE9,'í':0xED,'ó':0xF3,'ú':0xFA,'ñ':0xF1,'Á':0xC1,'É':0xC9,'Í':0xCD,'Ó':0xD3,'Ú':0xDA,'Ñ':0xD1,'¡':0xA1,'¿':0xBF};
+// Tamaño de nombre negocio: n=1 normal, 2=dbl alto, 3=dbl ancho+alto, 4=3x
+// GS ! byte: bits 0-2 = width-1, bits 4-6 = height-1
+function negSizeCmd(n) {
+  if (n >= 4) return [TK_GS, 0x21, 0x22]; // 3x ancho, 3x alto
+  if (n === 3) return [TK_GS, 0x21, 0x11]; // 2x ancho, 2x alto
+  if (n === 2) return [TK_GS, 0x21, 0x10]; // 1x ancho, 2x alto
+  return [];                                 // normal
+}
+function negAncho(n, W) {
+  if (n >= 3) return Math.floor(W / 2); // doble ancho = mitad de chars
+  return W;
+}
+function _aplicarTamNeg(n) {
+  [1,2,3,4].forEach(i => {
+    const btn = document.getElementById('tn-' + i);
+    if (!btn) return;
+    const sizes = ['','text-sm','text-base','text-lg','text-xl'];
+    btn.className = i === n
+      ? `tn-btn py-3 rounded-xl border-2 border-green-700 bg-green-700 text-white font-black transition ${sizes[i]}`
+      : `tn-btn py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-black transition hover:border-green-300 ${sizes[i]}`;
+  });
+}
+function selTamNeg(n) {
+  if (tkCfg) tkCfg.tamanoNegocio = n;
+  _aplicarTamNeg(n);
+  guardarTicketCfg();
+}
+function tkEscBytes(str){ return [...String(str)].map(c=>TK_ACCENT[c]??(c.charCodeAt(0)<256?c.charCodeAt(0):63)); }
+function tkLinea(text='',w){ w=w||getTKW(); return [...tkEscBytes(String(text).slice(0,w)),0x0A]; }
+function tkLineaWrap(text,w){ w=w||getTKW(); return wordWrap(text,w).flatMap(l=>tkLinea(l,w)); }
+function tkItemPrecio(desc,precio,w){ w=w||getTKW(); const p='S/'+precio.toFixed(2); const d=String(desc).slice(0,w-p.length-1); return tkLinea(d+' '.repeat(Math.max(1,w-d.length-p.length))+p,w); }
+function tkSepChar(w){ w=w||getTKW(); return tkLinea((tkCfg.separador||'-').repeat(w),w); }
+function tkFormatFecha(f){ if(!f)return''; const[y,m,d]=f.split('-'); const ms=['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return`${d}/${ms[parseInt(m)]}/${y}`; }
+function tkConstruirBytes(ticket) {
+  const W   = getTKW();
+  const neg = (tkCfg.negocio||cfg.negocio||'Trigoncio').toUpperCase();
+  const titulo  = (tkCfg.tituloTicket||'TICKET DE INGRESO').toUpperCase();
+  const pie     = tkCfg.pie     || 'Gracias por su preferencia';
+  const simb    = tkCfg.simbolo || '* * *';
+  const etiq    = tkCfg.etiquetaNum ? tkCfg.etiquetaNum + ' ' : '';
+  const hora    = tkCfg.mostrarHora    !== false;
+  const cabHdr  = tkCfg.mostrarCabecera !== false;
+  const grande  = tkCfg.tamanoFuente === 'grande';
+  const fontCmd = tkCfg.tamanoFuente === 'pequeño' ? [TK_ESC,0x4D,0x01] : [TK_ESC,0x4D,0x00];
+  const dblH    = grande ? [TK_GS,0x21,0x10] : [];
+  const normH   = grande ? [TK_GS,0x21,0x00] : [];
+
+  // Líneas extra de cabecera
+  const extraCabBytes = (tkCfg.extraCabecera||'').split('\n')
+    .filter(l=>l.trim()).flatMap(l=>tkLineaWrap(l.trim(),W));
+  // Notas de pie
+  const notasPieBytes = (tkCfg.notasPie||'').split('\n')
+    .filter(l=>l.trim()).flatMap(l=>tkLineaWrap(l.trim(),W));
+
+  return new Uint8Array([
+    ...TK_CMD.init, ...TK_CMD.codepage, ...fontCmd, ...dblH,
+    // Nombre negocio (tamaño 1-4 configurable)
+    ...TK_CMD.center,
+    ...(tkCfg.boldNegocio !== false ? TK_CMD.boldOn : []),
+    ...negSizeCmd(tkCfg.tamanoNegocio || 1),
+    ...tkLinea(neg, negAncho(tkCfg.tamanoNegocio || 1, W)),
+    ...TK_CMD.normalSize,
+    ...(tkCfg.boldNegocio !== false ? TK_CMD.boldOff : []),
+    // Subtítulo, dirección, teléfono, líneas extra
+    ...(tkCfg.subtitulo ? tkLineaWrap(tkCfg.subtitulo,W)  : []),
+    ...(tkCfg.direccion ? tkLineaWrap(tkCfg.direccion,W)  : []),
+    ...(tkCfg.telefono  ? tkLineaWrap(tkCfg.telefono,W)   : []),
+    ...extraCabBytes,
+    ...TK_CMD.lf,
+    // Título del ticket
+    ...tkSepChar(W), ...TK_CMD.boldOn, ...tkLinea(titulo,W), ...TK_CMD.boldOff, ...tkSepChar(W),
+    // Número (con etiqueta)
+    ...normH, ...TK_CMD.dblSize, ...TK_CMD.boldOn,
+    ...tkLinea(etiq + ticket.codigo),
+    ...TK_CMD.normalSize, ...TK_CMD.boldOff, ...dblH, ...TK_CMD.lf,
+    // Datos cliente
+    ...TK_CMD.left,
+    ...tkLineaWrap('Cliente: '+(ticket.nombre||''),W),
+    ...tkLinea('Fecha:   '+tkFormatFecha(ticket.fecha),W),
+    ...(hora ? tkLinea('Hora:    '+(ticket.hora||'--:--'),W) : []),
+    ...TK_CMD.lf,
+    // Artículos
+    ...tkSepChar(W),
+    ...(cabHdr ? [...tkLinea('ARTICULO'+' '.repeat(W-8-6)+'PRECIO',W), ...tkSepChar(W)] : []),
+    ...(ticket.items||[]).flatMap(i=>tkItemPrecio(i.desc,parseFloat(i.precio)||0,W)),
+    ...tkSepChar(W),
+    ...TK_CMD.boldOn, ...tkItemPrecio('TOTAL',parseFloat(ticket.total)||0,W), ...TK_CMD.boldOff,
+    ...(ticket.nota ? [...TK_CMD.lf, ...tkLineaWrap('Nota: '+ticket.nota,W)] : []),
+    ...normH, ...TK_CMD.lf,
+    // Pie principal
+    ...TK_CMD.center, ...tkLineaWrap(pie,W),
+    // Notas / condiciones
+    ...(notasPieBytes.length ? [...tkSepChar(W), ...TK_CMD.left, ...notasPieBytes] : []),
+    ...TK_CMD.center, ...TK_CMD.lf, ...tkLinea(simb,W),
+    ...TK_CMD.lf, ...TK_CMD.lf, ...TK_CMD.lf,
+    ...TK_CMD.cut,
+  ]);
+}
+
+// ─── COBRO ───────────────────────────────────────────────────
+let ticketSeleccionado = null;
+let metodoPago = null;
+let fotoBase64 = null;
+
+function renderPendientes() {
+  const q        = (document.getElementById('c-buscar').value||'').toLowerCase().trim();
+  const entradas = getEntradas();
+  const cobros   = getCobros();
+  let pendientes = entradas.filter(e => e.estado !== 'cobrado');
+  if (q) pendientes = pendientes.filter(e =>
+    e.nombre.toLowerCase().includes(q) || e.codigo.includes(q));
+
+  const cont  = document.getElementById('c-pendientes');
+  const vacio = document.getElementById('c-vacio');
+  cont.innerHTML = '';
+
+  if (pendientes.length === 0 && !ticketSeleccionado) {
+    vacio.classList.remove('hidden'); return;
+  }
+  vacio.classList.add('hidden');
+
+  pendientes.forEach(e => {
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-2xl shadow-sm border border-slate-100 card-pendiente px-4 py-3.5 flex items-center gap-3 cursor-pointer hover:shadow-md transition fade-in';
+    card.onclick = () => seleccionarTicket(e);
+    const desc = e.items.map(i=>i.desc).join(', ');
+    card.innerHTML = `
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="font-black font-mono text-green-700">#${e.codigo}</span>
+          <span class="text-xs text-slate-400">${e.hora} · ${fechaLegible(e.fecha)}</span>
+        </div>
+        <p class="font-semibold text-slate-800 text-sm truncate">${e.nombre}</p>
+        <p class="text-xs text-slate-400 truncate mt-0.5">${desc}</p>
+      </div>
+      <div class="text-right shrink-0 flex flex-col items-end gap-1">
+        <p class="font-black text-slate-800">S/ ${e.monto.toFixed(2)}</p>
+        <span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">pendiente</span>
+      </div>`;
+    cont.appendChild(card);
+  });
+}
+
+function buscarPendientes(q) { renderPendientes(); }
+
+function seleccionarTicket(entrada) {
+  ticketSeleccionado = entrada;
+  document.getElementById('c-ticket-num').textContent    = '#' + entrada.codigo;
+  document.getElementById('c-ticket-nombre').textContent = entrada.nombre;
+  document.getElementById('c-ticket-detalle').textContent =
+    entrada.items.map(i => `${i.desc} S/${i.precio.toFixed(2)}`).join(' · ') +
+    ` | Total: S/${entrada.monto.toFixed(2)}`;
+  document.getElementById('c-monto').value = entrada.monto.toFixed(2);
+  document.getElementById('c-form').classList.remove('hidden');
+  metodoPago = null;
+  fotoBase64 = null;
+  document.getElementById('c-foto-preview').classList.add('hidden');
+  document.getElementById('btn-efectivo').className = 'metodo-btn border-2 border-slate-200 rounded-xl py-3.5 text-sm font-bold text-slate-600 flex flex-col items-center gap-1';
+  document.getElementById('btn-yape').className     = 'metodo-btn border-2 border-slate-200 rounded-xl py-3.5 text-sm font-bold text-slate-600 flex flex-col items-center gap-1';
+  document.getElementById('c-form').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function deseleccionarTicket() {
+  ticketSeleccionado = null;
+  document.getElementById('c-form').classList.add('hidden');
+}
+
+function selMetodo(m) {
+  metodoPago = m;
+  document.getElementById('btn-efectivo').className = 'metodo-btn border-2 rounded-xl py-3.5 text-sm font-bold flex flex-col items-center gap-1 ' +
+    (m==='efectivo' ? 'metodo-activo-efectivo' : 'border-slate-200 text-slate-600');
+  document.getElementById('btn-yape').className = 'metodo-btn border-2 rounded-xl py-3.5 text-sm font-bold flex flex-col items-center gap-1 ' +
+    (m==='yape' ? 'metodo-activo-yape' : 'border-slate-200 text-slate-600');
+}
+
+function previsualizarFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const comprimida = await comprimirImagen(e.target.result);
+    fotoBase64 = comprimida;
+    document.getElementById('c-foto-img').src = comprimida;
+    document.getElementById('c-foto-preview').classList.remove('hidden');
+    document.getElementById('c-foto-estado').textContent = '📷 Foto lista — se subirá al guardar';
+    document.getElementById('c-foto-estado').className = 'text-xs text-green-600 mt-1 font-medium';
+  };
+  reader.readAsDataURL(file);
+}
+function quitarFoto() {
+  fotoBase64 = null;
+  document.getElementById('c-foto-preview').classList.add('hidden');
+  document.getElementById('c-foto-estado').textContent = '';
+  document.getElementById('c-foto').value = '';
+}
+
+async function comprimirImagen(dataUrl, maxWidth = 900, quality = 0.72) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function subirFotoImgbb(base64) {
+  // Quitar prefijo "data:image/...;base64,"
+  const b64 = base64.split(',')[1];
+  const form = new FormData();
+  form.append('key', IMGBB_KEY);
+  form.append('image', b64);
+  const res = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form });
+  const json = await res.json();
+  if (json.success) return json.data.url;
+  throw new Error(json.error?.message || 'Error imgbb');
+}
+
+async function registrarCobro() {
+  if (!ticketSeleccionado) return;
+  if (!metodoPago) { toast('Selecciona el método de pago','error'); return; }
+  const monto = parseFloat(document.getElementById('c-monto').value);
+  if (!monto || monto <= 0) { toast('Ingresa el monto cobrado','error'); return; }
+
+  // Subir foto a imgbb si existe
+  let fotoUrl = null;
+  if (fotoBase64) {
+    const estadoEl = document.getElementById('c-foto-estado');
+    estadoEl.textContent = '⏳ Subiendo foto...';
+    estadoEl.className = 'text-xs text-green-600 font-medium';
+    try {
+      fotoUrl = await subirFotoImgbb(fotoBase64);
+      estadoEl.textContent = '✅ Foto subida a la nube';
+      estadoEl.className = 'text-xs text-green-600 font-medium';
+    } catch(e) {
+      estadoEl.textContent = '⚠️ No se pudo subir la foto — se guardará sin imagen';
+      estadoEl.className = 'text-xs text-amber-500 font-medium';
+    }
+  }
+
+  const cobro = {
+    tipo:          'COBRO',
+    codigoEntrada: ticketSeleccionado.codigo,
+    nombre:        ticketSeleccionado.nombre,
+    fecha:         hoy(),
+    hora:          horaActual(),
+    monto,
+    metodo:        metodoPago,
+    fotoUrl:       fotoUrl || null,
+    registradoEn:  new Date().toISOString(),
+  };
+
+  const cobros = getCobros();
+  cobros.unshift(cobro);
+  saveCobros(cobros);
+
+  // Marcar la entrada como cobrada en memoria
+  const entradas = getEntradas();
+  const idxE = entradas.findIndex(e => e.codigo === ticketSeleccionado.codigo && e.nombre === ticketSeleccionado.nombre);
+  if (idxE >= 0) { entradas[idxE].estado = 'cobrado'; saveEntradas(entradas); }
+
+  _sbFire(cobro);
+
+  deseleccionarTicket();
+  document.getElementById('c-buscar').value = '';
+  renderPendientes();
+  toast('✅ Cobro registrado — ' + (metodoPago==='yape'?'📱 Yape':'💵 Efectivo'));
+}
+
+// ─── SUPABASE ──────────────────────────────────────────────
+// Fire-and-forget: envía a Supabase sin bloquear la UI
+function _sbFire(data) {
+  _procesarEnSupabase(data).catch(() => {});
+}
+async function guardarEnSupabase(data) {
+  showLoad();
+  try {
+    await _procesarEnSupabase(data);
+    hideLoad();
+    toast('✅ Guardado en Supabase');
+  } catch(err) { hideLoad(); toast('⚠️ Sin conexión — guardado solo local', 'error'); }
+}
+async function guardarEnSupabaseQuiet(data) {
+  showLoad();
+  try { await _procesarEnSupabase(data); hideLoad(); }
+  catch(err) { hideLoad(); }
+}
+async function _procesarEnSupabase(data) {
+  const enc = encodeURIComponent;
+  if (data.tipo === 'ENTRADA') {
+    await sbPost('entradas', { codigo: data.codigo, nombre: data.nombre||'', celular: data.celular||'', fecha: data.fecha||'', hora: data.hora||'', items: data.items||[], monto: parseFloat(data.monto)||0, nota: data.nota||'', estado: data.estado||'pendiente', registrado_en: data.registradoEn||new Date().toISOString() });
+  } else if (data.tipo === 'ENTRADA_EDIT') {
+    await sbPatch('entradas', 'codigo=eq.'+enc(data.codigo), { nombre: data.nombre, celular: data.celular||'', fecha: data.fecha, hora: data.hora, items: data.items||[], monto: parseFloat(data.monto)||0, nota: data.nota||'', estado: data.estado||'pendiente' });
+  } else if (data.tipo === 'COBRO') {
+    await sbPost('cobros', { codigo_entrada: data.codigoEntrada, nombre: data.nombre||'', fecha: data.fecha||'', hora: data.hora||'', monto: parseFloat(data.monto)||0, metodo: data.metodo||'', foto_url: data.fotoUrl||'', registrado_en: data.registradoEn||new Date().toISOString() });
+    await sbPatch('entradas', 'codigo=eq.'+enc(data.codigoEntrada), { estado: 'cobrado' });
+  } else if (data.tipo === 'COBRO_EDIT') {
+    await sbPatch('cobros', 'codigo_entrada=eq.'+enc(data.codigoEntrada)+'&nombre=eq.'+enc(data.nombre)+'&hora=eq.'+enc(data.hora), { metodo: data.metodo, foto_url: data.fotoUrl||'' });
+  } else if (data.tipo === 'COBRO_DELETE') {
+    await sbDelete('cobros', 'codigo_entrada=eq.'+enc(data.codigoEntrada)+'&nombre=eq.'+enc(data.nombre));
+  }
+}
+
+// guardarEnSupabaseQuiet ya está definida arriba junto con guardarEnSupabase
+
+// ─── SINCRONIZAR DESDE SHEETS AL ABRIR ───────────────────────
+async function sincronizarDesdeSupabase() {
+  toast('🔄 Sincronizando...', 'info');
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const hds = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+    const [resE, resC] = await Promise.all([
+      fetch(SUPABASE_URL + '/rest/v1/entradas?select=*&order=registrado_en.desc', { signal: controller.signal, headers: hds }),
+      fetch(SUPABASE_URL + '/rest/v1/cobros?select=*&order=registrado_en.desc', { signal: controller.signal, headers: hds })
+    ]);
+    clearTimeout(timer);
+    const entradasRaw = await resE.json();
+    const cobrosRaw   = await resC.json();
+    if (!Array.isArray(entradasRaw)) { toast('⚠️ Sin conexión', 'error'); return; }
+    const entradas = entradasRaw.filter(e => e.codigo !== '__config__').map(e => ({
+      codigo: e.codigo, nombre: e.nombre||'', celular: e.celular||'',
+      fecha: e.fecha||hoy(), hora: e.hora||'',
+      items: Array.isArray(e.items) ? e.items : (JSON.parse(e.items||'[]')),
+      monto: parseFloat(e.monto)||0, nota: e.nota||'',
+      estado: e.estado||'pendiente', registradoEn: e.registrado_en||''
+    }));
+    const cobros = (cobrosRaw||[]).map(c => ({
+      codigoEntrada: c.codigo_entrada, nombre: c.nombre||'',
+      fecha: c.fecha||'', hora: c.hora||'',
+      monto: parseFloat(c.monto)||0, metodo: c.metodo||'',
+      fotoUrl: c.foto_url||'', registradoEn: c.registrado_en||''
+    }));
+    saveEntradas(entradas); saveCobros(cobros);
+    const maxCod = entradas.reduce((m, e) => Math.max(m, parseInt(e.codigo)||0), 0);
+    const elCodSync = document.getElementById('entrada-codigo');
+    if (elCodSync && elCodSync.textContent !== '...') elCodSync.textContent = String(maxCod + 1).padStart(3, '0');
+    const cobradosKey = new Set(cobros.map(c => c.codigoEntrada+'|'+(c.nombre||'').toLowerCase().trim()));
+    saveEntradas(getEntradas().map(e => {
+      const tieneCobro = cobradosKey.has(e.codigo+'|'+(e.nombre||'').toLowerCase().trim());
+      return { ...e, estado: tieneCobro ? 'cobrado' : (e.estado==='cobrado' ? 'pendiente' : e.estado) };
+    }));
+    renderPendientes(); renderResumen();
+    if (tabResumen === 'tabla') renderTabla();
+    toast('✅ Sincronizado con Supabase');
+  } catch(err) { toast('⚠️ Sin conexión — usando datos locales', 'error'); }
+}
+
+// ─── RESUMEN ─────────────────────────────────────────────────
+let tabResumen = 'entradas';
+
+function setTabResumen(tab) {
+  tabResumen = tab;
+  ['entradas','cobros','tabla'].forEach(t => {
+    const btn = document.getElementById('rtab-'+t);
+    if (!btn) return;
+    if (t === tab) { btn.classList.add('tab-activo'); btn.classList.remove('text-slate-500','border-slate-200'); btn.classList.add('border-green-700'); }
+    else { btn.classList.remove('tab-activo'); btn.classList.add('text-slate-500','border-slate-200'); btn.classList.remove('border-green-700'); }
+  });
+  document.getElementById('r-lista').classList.toggle('hidden', tab === 'tabla');
+  document.getElementById('r-tabla').classList.toggle('hidden', tab !== 'tabla');
+  if (tab === 'tabla') renderTabla();
+  else renderResumen();
+}
+
+function renderResumen() {
+  const fecha    = document.getElementById('r-fecha').value || hoy();
+  const entradas = getEntradas().filter(e => e.fecha === fecha);
+  const cobros   = getCobros().filter(c => c.fecha === fecha);
+  const pendientes = entradas.filter(e => e.estado !== 'cobrado');
+
+  const totalEfectivo = cobros.filter(c=>c.metodo==='efectivo').reduce((s,c)=>s+c.monto,0);
+  const totalYape     = cobros.filter(c=>c.metodo==='yape').reduce((s,c)=>s+c.monto,0);
+  const totalCobrado  = totalEfectivo + totalYape;
+
+  document.getElementById('r-entradas').textContent  = entradas.length;
+  document.getElementById('r-pendientes').textContent = pendientes.length;
+  document.getElementById('r-efectivo').textContent  = 'S/ ' + totalEfectivo.toFixed(2);
+  document.getElementById('r-yape').textContent      = 'S/ ' + totalYape.toFixed(2);
+  document.getElementById('r-total').textContent     = 'S/ ' + totalCobrado.toFixed(2);
+
+  const lista = document.getElementById('r-lista');
+  const vacio = document.getElementById('r-vacio');
+  lista.innerHTML = '';
+
+  const datos = tabResumen === 'entradas' ? entradas : cobros;
+  if (datos.length === 0) { vacio.classList.remove('hidden'); return; }
+  vacio.classList.add('hidden');
+
+  datos.forEach(d => {
+    const card = document.createElement('div');
+    const esCobrado = tabResumen === 'cobros';
+    card.className = 'bg-white rounded-2xl border border-slate-100 shadow-sm px-4 py-3.5 flex items-center gap-3 fade-in ' +
+      (esCobrado ? 'card-cobrado' : 'card-pendiente');
+
+    if (esCobrado) {
+      // Botón editar para todos los cobros (yape y efectivo)
+      const _ef = d.nombre.replace(/'/g,"\\'");
+      const btnFoto = d.metodo === 'yape'
+        ? `<button onclick="abrirEditFoto('${d.codigoEntrada}','${_ef}','${d.fecha}','${d.hora}')"
+            class="text-xs ${d.fotoUrl?'bg-purple-50 text-purple-600 hover:bg-purple-100':'bg-green-50 text-green-700 hover:bg-green-100'} px-2.5 py-1 rounded-lg font-semibold transition">📷 Foto</button>`
+        : `<button onclick="abrirEditFoto('${d.codigoEntrada}','${_ef}','${d.fecha}','${d.hora}')"
+            class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-semibold transition">✏️</button>`;
+      card.innerHTML = `
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-black font-mono text-green-600">#${d.codigoEntrada}</span>
+            <span class="text-xs ${d.metodo==='yape'?'bg-purple-100 text-purple-700':'bg-green-100 text-green-700'} px-2 py-0.5 rounded-full font-semibold">
+              ${d.metodo==='yape'?'📱 Yape':'💵 Efectivo'}
+            </span>
+          </div>
+          <p class="font-semibold text-slate-800 text-sm">${d.nombre}</p>
+          <p class="text-xs text-slate-400">${d.hora}</p>
+        </div>
+        <div class="flex flex-col items-end gap-1.5 shrink-0">
+          <p class="font-black text-slate-800 text-lg">S/ ${d.monto.toFixed(2)}</p>
+          <div class="flex gap-1">
+            ${btnFoto}
+            <button onclick="abrirReimp('${d.codigoEntrada}')"
+              class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-semibold transition">🖨️</button>
+            <button onclick="abrirOpAvanzadas('${d.codigoEntrada}')"
+              class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-semibold transition">⚙️</button>
+          </div>
+        </div>`;
+    } else {
+      const cobrado = d.estado === 'cobrado';
+      card.innerHTML = `
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-black font-mono text-green-700">#${d.codigo}</span>
+            <span class="text-xs ${cobrado?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'} px-2 py-0.5 rounded-full font-semibold">
+              ${cobrado?'✅ cobrado':'⏳ pendiente'}
+            </span>
+          </div>
+          <p class="font-semibold text-slate-800 text-sm">${d.nombre}</p>
+          <p class="text-xs text-slate-400">${d.hora} · ${d.items.map(i=>i.desc).join(', ')}</p>
+        </div>
+        <div class="flex flex-col items-end gap-1.5 shrink-0">
+          <p class="font-black text-slate-800 text-lg">S/ ${d.monto.toFixed(2)}</p>
+          <div class="flex gap-1">
+            <button onclick="verVoucherEntrada(${JSON.stringify(d).replace(/"/g,'&quot;')})"
+              class="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-2.5 py-1 rounded-lg font-semibold transition">🧾</button>
+            <button onclick="abrirReimp('${d.codigo}')"
+              class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-semibold transition">🖨️</button>
+            <button onclick="abrirOpAvanzadas('${d.codigo}')"
+              class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-semibold transition">⚙️</button>
+          </div>
+        </div>`;
+    }
+    lista.appendChild(card);
+  });
+}
+
+// ─── TABLA TIPO EXCEL ────────────────────────────────────────
+function renderTabla() {
+  const fecha    = document.getElementById('r-fecha').value || hoy();
+  const entradas = getEntradas().filter(e => e.fecha === fecha);
+  const cobros   = getCobros().filter(c => c.fecha === fecha);
+  const cont = document.getElementById('r-tabla');
+  const vacio = document.getElementById('r-vacio');
+
+  if (entradas.length === 0 && cobros.length === 0) {
+    vacio.classList.remove('hidden'); cont.innerHTML = ''; return;
+  }
+  vacio.classList.add('hidden');
+
+  const thCls = 'px-2 py-2 text-left text-xs font-bold text-slate-600 border-b border-slate-200 bg-slate-50';
+  const tdCls = 'px-2 py-2 text-xs text-slate-700 border-b border-slate-100';
+
+  // Tabla ingresos
+  let rowsE = entradas.map(e => {
+    const arts = e.items.map(i => i.desc).join(', ');
+    const estadoBadge = e.estado === 'cobrado'
+      ? '<span style="color:#16a34a;font-weight:700">✅ Cobrado</span>'
+      : '<span style="color:#d97706;font-weight:700">⏳ Pendiente</span>';
+    return `<tr>
+      <td class="${tdCls} font-mono font-bold text-green-700">#${e.codigo}</td>
+      <td class="${tdCls} font-semibold">${e.nombre}</td>
+      <td class="${tdCls}">${arts}</td>
+      <td class="${tdCls} font-bold text-right">S/ ${e.monto.toFixed(2)}</td>
+      <td class="${tdCls}">${estadoBadge}</td>
+    </tr>`;
+  }).join('');
+
+  // Tabla cobros
+  let rowsC = cobros.map(c => {
+    const metBadge = c.metodo === 'yape'
+      ? '<span style="color:#7c3aed;font-weight:700">📱 Yape</span>'
+      : '<span style="color:#16a34a;font-weight:700">💵 Efectivo</span>';
+    return `<tr>
+      <td class="${tdCls} font-mono font-bold text-green-600">#${c.codigoEntrada}</td>
+      <td class="${tdCls} font-semibold">${c.nombre}</td>
+      <td class="${tdCls} font-bold text-right">S/ ${c.monto.toFixed(2)}</td>
+      <td class="${tdCls}">${metBadge}</td>
+    </tr>`;
+  }).join('');
+
+  const totalCobrado = cobros.reduce((s,c)=>s+c.monto,0);
+
+  cont.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="px-4 py-3 bg-green-700 text-white">
+        <p class="font-bold text-sm">📥 Ingresos del día · ${fechaLegible(fecha)}</p>
+        <p class="text-xs opacity-80">${entradas.length} ticket${entradas.length!==1?'s':''}</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead><tr>
+            <th class="${thCls}">#</th>
+            <th class="${thCls}">Nombre</th>
+            <th class="${thCls}">Artículos</th>
+            <th class="${thCls} text-right">Monto</th>
+            <th class="${thCls}">Estado</th>
+          </tr></thead>
+          <tbody>${rowsE || '<tr><td colspan="5" class="px-2 py-4 text-center text-xs text-slate-400">Sin ingresos</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="px-4 py-3 bg-green-600 text-white flex justify-between items-center">
+        <div>
+          <p class="font-bold text-sm">💰 Cobros del día · ${fechaLegible(fecha)}</p>
+          <p class="text-xs opacity-80">${cobros.length} cobro${cobros.length!==1?'s':''}</p>
+        </div>
+        <p class="font-black text-lg">S/ ${totalCobrado.toFixed(2)}</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead><tr>
+            <th class="${thCls}">#</th>
+            <th class="${thCls}">Nombre</th>
+            <th class="${thCls} text-right">Monto</th>
+            <th class="${thCls}">Método</th>
+          </tr></thead>
+          <tbody>${rowsC || '<tr><td colspan="4" class="px-2 py-4 text-center text-xs text-slate-400">Sin cobros</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ─── EDITAR FOTO DE COBRO ────────────────────────────────────
+let _editFotoCobro = null;
+let _efMetodo = 'yape';
+
+function setEfMetodo(m) {
+  _efMetodo = m;
+  document.getElementById('ef-btn-efectivo').className =
+    'flex-1 py-2.5 rounded-xl border-2 font-bold text-sm transition ' +
+    (m === 'efectivo' ? 'border-green-500 bg-green-50 text-green-700' : 'border-slate-200 text-slate-600');
+  document.getElementById('ef-btn-yape').className =
+    'flex-1 py-2.5 rounded-xl border-2 font-bold text-sm transition ' +
+    (m === 'yape' ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-slate-200 text-slate-600');
+  // Mostrar sección foto solo en yape
+  document.getElementById('ef-foto-section').classList.toggle('hidden', m !== 'yape');
+}
+
+function efOnFileChange(input) {
+  if (input.files && input.files[0]) {
+    // Limpiar el otro input
+    const otro = input.id === 'ef-input' ? 'ef-input-camara' : 'ef-input';
+    document.getElementById(otro).value = '';
+    const reader = new FileReader();
+    reader.onload = async e => {
+      const comprimida = await comprimirImagen(e.target.result);
+      const preview = document.getElementById('ef-preview');
+      preview.src = comprimida;
+      preview.classList.remove('hidden');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function abrirEditFoto(codigoEntrada, nombre, fecha, hora) {
+  _editFotoCobro = getCobros().find(c =>
+    c.codigoEntrada === codigoEntrada && c.nombre === nombre &&
+    c.fecha === fecha && c.hora === hora
+  );
+  if (!_editFotoCobro) { toast('Cobro no encontrado', 'error'); return; }
+  document.getElementById('modal-edit-foto').classList.remove('hidden');
+  document.getElementById('ef-input').value = '';
+  document.getElementById('ef-input-camara').value = '';
+  const preview = document.getElementById('ef-preview');
+  preview.src = _editFotoCobro.fotoUrl || '';
+  preview.classList.toggle('hidden', !_editFotoCobro.fotoUrl);
+  setEfMetodo(_editFotoCobro.metodo || 'yape');
+}
+
+function cerrarEditFoto() {
+  document.getElementById('modal-edit-foto').classList.add('hidden');
+  _editFotoCobro = null;
+}
+
+async function confirmarEditFoto() {
+  const input = document.getElementById('ef-input');
+  const metodoNuevo = _efMetodo;
+  showLoad();
+  try {
+    let fotoUrl = _editFotoCobro.fotoUrl || null;
+    // Subir nueva foto si se seleccionó una (cámara o galería)
+    const inputCamara = document.getElementById('ef-input-camara');
+    const archivoSeleccionado = (input.files && input.files[0]) ? input.files[0]
+      : (inputCamara.files && inputCamara.files[0]) ? inputCamara.files[0] : null;
+    if (archivoSeleccionado) {
+      const base64 = await new Promise(res => {
+        const r = new FileReader();
+        r.onload = async e => res(await comprimirImagen(e.target.result));
+        r.readAsDataURL(archivoSeleccionado);
+      });
+      fotoUrl = await subirFotoImgbb(base64);
+    }
+    // Si cambió a efectivo, quitar foto
+    if (metodoNuevo === 'efectivo') fotoUrl = null;
+    hideLoad();
+    // Actualizar en memoria
+    const cobros = getCobros();
+    const idx = cobros.findIndex(c =>
+      c.codigoEntrada === _editFotoCobro.codigoEntrada &&
+      c.nombre === _editFotoCobro.nombre &&
+      c.fecha === _editFotoCobro.fecha &&
+      c.hora === _editFotoCobro.hora
+    );
+    if (idx >= 0) {
+      cobros[idx].metodo = metodoNuevo;
+      cobros[idx].fotoUrl = fotoUrl;
+      saveCobros(cobros);
+      _sbFire({
+        tipo: 'COBRO_EDIT',
+        codigoEntrada: _editFotoCobro.codigoEntrada,
+        nombre: _editFotoCobro.nombre,
+        fecha: _editFotoCobro.fecha,
+        hora: _editFotoCobro.hora,
+        metodo: metodoNuevo,
+        fotoUrl: fotoUrl || ''
+      });
+    }
+    cerrarEditFoto();
+    renderResumen();
+    toast('✅ Cobro actualizado');
+  } catch(e) {
+    hideLoad();
+    toast('Error al guardar', 'error');
+  }
+}
+
+// ─── VOUCHERS (historial de impresiones — en memoria) ────────
+const MAX_VOUCHERS = 50;
+
+function guardarVoucher(entrada, lineas) {
+  _vouchersMem.unshift({
+    codigo:     entrada.codigo,
+    nombre:     entrada.nombre,
+    fecha:      entrada.fecha,
+    hora:       entrada.hora,
+    items:      entrada.items,
+    monto:      entrada.monto,
+    texto:      lineas.join('\n'),
+    impreso_en: new Date().toISOString(),
+  });
+  if (_vouchersMem.length > MAX_VOUCHERS) _vouchersMem = _vouchersMem.slice(0, MAX_VOUCHERS);
+  actualizarBannerUltimoVoucher();
+}
+
+function actualizarBannerUltimoVoucher() {
+  const hist = _vouchersMem;
+  const banner = document.getElementById('ultimo-voucher-banner');
+  if (!banner) return;
+  if (hist.length === 0) { banner.classList.add('hidden'); return; }
+  const v = hist[0];
+  banner.classList.remove('hidden');
+  document.getElementById('ultimo-voucher-info').textContent =
+    `#${v.codigo} · ${v.nombre} · S/ ${parseFloat(v.monto).toFixed(2)}`;
+}
+
+function verUltimoVoucher() {
+  if (_vouchersMem.length === 0) return;
+  mostrarVoucher(_vouchersMem[0]);
+}
+
+function mostrarVoucher(v) {
+  document.getElementById('modal-voucher-subtitulo').textContent =
+    `#${v.codigo} · ${v.nombre} · ${new Date(v.impreso_en).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}`;
+  renderTicketPaper('modal-voucher-paper', v.texto.split('\n'));
+  document.getElementById('modal-voucher').classList.remove('hidden');
+}
+
+function cerrarVoucher() {
+  document.getElementById('modal-voucher').classList.add('hidden');
+}
+
+function abrirHistorialVouchers() {
+  cerrarVoucher();
+  const hist = _vouchersMem;
+  const lista = document.getElementById('hist-vouchers-lista');
+  lista.innerHTML = '';
+  if (hist.length === 0) {
+    lista.innerHTML = '<p class="text-center text-slate-400 py-8 text-sm">Sin vouchers guardados aún</p>';
+  } else {
+    hist.forEach(v => {
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-2xl border border-slate-100 shadow-sm px-4 py-3 flex items-center gap-3 cursor-pointer hover:shadow-md transition fade-in';
+      card.onclick = () => mostrarVoucher(v);
+      const hora = new Date(v.impreso_en).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+      const fecha = new Date(v.impreso_en).toLocaleDateString('es-PE',{day:'2-digit',month:'short'});
+      card.innerHTML = `
+        <div class="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-lg shrink-0">🧾</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-black font-mono text-green-700 text-sm">#${v.codigo}</span>
+            <span class="text-xs text-slate-400">${fecha} ${hora}</span>
+          </div>
+          <p class="font-semibold text-slate-800 text-sm truncate">${v.nombre}</p>
+          <p class="text-xs text-slate-400">S/ ${parseFloat(v.monto).toFixed(2)}</p>
+        </div>
+        <span class="text-slate-300 text-xl">›</span>`;
+      lista.appendChild(card);
+    });
+  }
+  document.getElementById('modal-hist-vouchers').classList.remove('hidden');
+}
+
+function cerrarHistorialVouchers() {
+  document.getElementById('modal-hist-vouchers').classList.add('hidden');
+}
+
+// ─── REIMPRIMIR ──────────────────────────────────────────────
+let _reimpCodigo = null;
+let _reimpCopias = 1;
+
+function abrirReimp(codigo) {
+  const entrada = getEntradas().find(e => e.codigo === codigo);
+  if (!entrada) { toast('No se encontró el ticket #' + codigo, 'error'); return; }
+  _reimpCodigo = codigo;
+  _reimpCopias = 1;
+  selCopias(1);
+  document.getElementById('reimp-subtitulo').textContent =
+    `#${codigo} · ${entrada.nombre} · S/ ${entrada.monto.toFixed(2)}`;
+  document.getElementById('reimp-estado').classList.add('hidden');
+  document.getElementById('reimp-btn-ok').disabled = false;
+  document.getElementById('reimp-btn-ok').textContent = '🖨️ Imprimir';
+  document.getElementById('modal-reimprimir').classList.remove('hidden');
+}
+
+function cerrarReimp() {
+  document.getElementById('modal-reimprimir').classList.add('hidden');
+  _reimpCodigo = null;
+}
+
+// ─── VER FOTO COBRO ──────────────────────────────────────────
+function verFotoCobro(url, titulo, subtitulo) {
+  document.getElementById('modal-foto-titulo').textContent = titulo;
+  document.getElementById('modal-foto-subtitulo').textContent = subtitulo;
+  document.getElementById('modal-foto-img').src = url;
+  document.getElementById('modal-foto-link').href = url;
+  document.getElementById('modal-foto-cobro').classList.remove('hidden');
+}
+function cerrarFotoCobro() {
+  document.getElementById('modal-foto-cobro').classList.add('hidden');
+  document.getElementById('modal-foto-img').src = '';
+}
+
+// ─── VER VOUCHER DESDE RESUMEN ───────────────────────────────
+function verVoucherEntrada(entrada) {
+  const lineas = generarLineasVoucher(entrada);
+  mostrarVoucher({
+    codigo:      entrada.codigo,
+    nombre:      entrada.nombre,
+    monto:       entrada.monto,
+    impreso_en:  new Date().toISOString(),
+    texto:       lineas.join('\n'),
+  });
+}
+
+function selCopias(n) {
+  _reimpCopias = n;
+  [1,2,3,4].forEach(i => {
+    const btn = document.getElementById('rc-' + i);
+    if (!btn) return;
+    if (i === n) {
+      btn.className = 'copias-btn py-4 rounded-2xl border-2 border-green-700 bg-green-700 text-white text-xl font-black transition';
+    } else {
+      btn.className = 'copias-btn py-4 rounded-2xl border-2 border-slate-200 text-slate-600 text-xl font-black transition hover:border-green-300';
+    }
+  });
+}
+
+function setReimpEstado(msg, tipo='info') {
+  const el = document.getElementById('reimp-estado');
+  const estilos = {
+    info:  'bg-green-50 text-green-700 border border-green-100',
+    ok:    'bg-green-50 text-green-700 border border-green-100',
+    error: 'bg-red-50 text-red-600 border border-red-100',
+  };
+  el.className = `text-center text-sm font-medium py-2 rounded-xl ${estilos[tipo]||estilos.info}`;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+async function confirmarReimp() {
+  if (!_reimpCodigo) return;
+  const entrada = getEntradas().find(e => e.codigo === _reimpCodigo);
+  if (!entrada) { toast('Ticket no encontrado', 'error'); return; }
+
+  const btn = document.getElementById('reimp-btn-ok');
+  btn.disabled = true;
+  btn.textContent = '⏳ Conectando...';
+
+  // Conectar si no hay conexión activa
+  if (!btChar) {
+    setReimpEstado('🔍 Selecciona la impresora Bluetooth...', 'info');
+    const ok = await conectarBT();
+    if (!ok) {
+      setReimpEstado('❌ No se pudo conectar la impresora', 'error');
+      btn.disabled = false; btn.textContent = '🖨️ Imprimir';
+      return;
+    }
+  }
+
+  const bytes = construirTicketEntrada(entrada);
+  btn.textContent = '⏳ Imprimiendo...';
+  setReimpEstado(`⏳ Imprimiendo ${_reimpCopias} ${_reimpCopias===1?'copia':'copias'}...`, 'info');
+
+  let ok = true;
+  for (let i = 0; i < _reimpCopias; i++) {
+    const res = await enviarBT(bytes);
+    if (!res) { ok = false; break; }
+    if (i < _reimpCopias - 1) await new Promise(r => setTimeout(r, 400)); // pausa entre copias
+  }
+
+  if (ok) {
+    setReimpEstado(`✅ ${_reimpCopias} ${_reimpCopias===1?'copia impresa':'copias impresas'} correctamente`, 'ok');
+    toast(`🖨️ ${_reimpCopias} copia(s) de #${_reimpCodigo} impresas`);
+    btn.textContent = '✅ Hecho';
+    setTimeout(() => cerrarReimp(), 1500);
+  } else {
+    setReimpEstado('❌ Error al imprimir — intenta de nuevo', 'error');
+    btn.disabled = false; btn.textContent = '🖨️ Intentar de nuevo';
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// ─── MÓDULO AVISOS WHATSAPP ──────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+let avPedidos = [];
+let avFiltro = 'todos';
+let avCargado = false;
+
+const AV_WA_SVG = `<svg style="width:14px;height:14px;flex-shrink:0" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.859L0 24l6.303-1.504A11.947 11.947 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.366l-.358-.214-3.742.893.938-3.641-.234-.373A9.818 9.818 0 0112 2.182c5.425 0 9.818 4.393 9.818 9.818 0 5.426-4.393 9.818-9.818 9.818z"/></svg>`;
+
+function avUrlWA(p) {
+  const tel = '51' + p.celular.replace(/\D/g,'');
+  const negocio = cfg.negocio || 'Trigoncio';
+  const msg = `Hola ${p.nombre} 👋, te avisamos que tu ropa de *${negocio}* ya está lavada, doblada y perfumada lista para recoger.🤩\n\n📋 Boleta: *${p.codigo}*\n\n¡Te esperamos! 🔧`;
+  return `https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msg)}`;
+}
+function avFechaCorta(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+async function avCargar(forzar = false) {
+  // Caché de 5 minutos en memoria para no recargar en cada visita a la pestaña
+  if (!forzar && _avCacheMem && (Date.now() - _avCacheMem.ts) < AV_CACHE_TTL) {
+    avPedidos = _avCacheMem.data; avCargado = true; avRender(); return;
+  }
+  document.getElementById('av-loading').classList.remove('hidden');
+  document.getElementById('av-lista').innerHTML = '';
+  document.getElementById('av-vacio').classList.add('hidden');
+  try {
+    const rows = await sbGet('entradas?select=*&order=registrado_en.desc&codigo=neq.__config__');
+    avPedidos = (rows||[]).filter(r => r.celular).map(r => ({
+      id: r.id, codigo: r.codigo, nombre: r.nombre,
+      celular: String(r.celular||'').replace(/\D/g,''),
+      fecha: r.fecha, hora: r.hora,
+      items: Array.isArray(r.items) ? r.items.map(i=>i.desc).join(', ') : '',
+      monto: r.monto, nota: r.nota||'',
+      notificado: r.estado === 'avisado',
+      fecha_aviso: '', registrado: r.registrado_en,
+    })).sort((a,b) => new Date(b.registrado) - new Date(a.registrado));
+    _avCacheMem = { ts: Date.now(), data: avPedidos };
+  } catch(e) {
+    toast('❌ Error al cargar avisos', 'error');
+    document.getElementById('av-loading').classList.add('hidden');
+    return;
+  }
+  document.getElementById('av-loading').classList.add('hidden');
+  avCargado = true;
+  avRender();
+}
+
+function avRender() {
+  const q = (document.getElementById('av-buscar')?.value || '').toLowerCase().trim();
+  let datos = [...avPedidos];
+  if (avFiltro === 'sin')      datos = datos.filter(p => !p.notificado);
+  if (avFiltro === 'avisados') datos = datos.filter(p =>  p.notificado);
+  if (q) datos = datos.filter(p => (p.codigo+'').toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q));
+
+  const sinAvisar = avPedidos.filter(p => !p.notificado).length;
+  document.getElementById('av-contador').textContent =
+    `${datos.length} pedido${datos.length!==1?'s':''} · ${sinAvisar} sin avisar`;
+
+  const lista = document.getElementById('av-lista');
+  const vacio = document.getElementById('av-vacio');
+  lista.innerHTML = '';
+
+  if (datos.length === 0) { vacio.classList.remove('hidden'); return; }
+  vacio.classList.add('hidden');
+
+  datos.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-2xl border shadow-sm px-4 py-3.5 flex items-center gap-3 fade-in cursor-pointer hover:shadow-md transition ' +
+      (p.notificado ? 'border-slate-100' : 'border-orange-100');
+    card.onclick = () => avAbrirDetalle(p.codigo);
+
+    const badge = p.notificado
+      ? `<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">📨 Avisado</span>`
+      : `<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">📵 Sin avisar</span>`;
+
+    const btnWA = p.notificado
+      ? `<a href="${avUrlWA(p)}" target="_blank" rel="noopener"
+            onclick="event.stopPropagation(); avRegistrarAviso('${p.codigo}')"
+            class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 shrink-0 transition">${AV_WA_SVG} Reenviar</a>`
+      : `<a href="${avUrlWA(p)}" target="_blank" rel="noopener"
+            onclick="event.stopPropagation(); avRegistrarAviso('${p.codigo}')"
+            class="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-green-500 text-white hover:bg-green-600 shrink-0 transition">${AV_WA_SVG} Avisar</a>`;
+
+    card.innerHTML = `
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="font-mono text-sm font-black text-green-700">${p.codigo}</span>
+          ${badge}
+        </div>
+        <p class="font-semibold text-slate-800 text-sm truncate mt-0.5">${p.nombre}</p>
+        <p class="text-xs text-slate-400 mt-0.5">📱 +51 ${p.celular}${p.nota?' · '+p.nota:''}${p.fecha_aviso?' · ✉️ '+p.fecha_aviso:''}</p>
+      </div>
+      ${btnWA}`;
+    lista.appendChild(card);
+  });
+}
+
+function avSetFiltro(f) {
+  avFiltro = f;
+  ['todos','sin','avisados'].forEach(x => {
+    const btn = document.getElementById('av-tab-'+x);
+    if (x === f) { btn.className = 'flex-1 py-2 text-xs font-bold rounded-xl border-2 border-green-700 text-white bg-green-700 transition'; }
+    else         { btn.className = 'flex-1 py-2 text-xs font-bold rounded-xl border-2 border-slate-200 text-slate-500 transition'; }
+  });
+  avRender();
+}
+
+async function avRegistrarAviso(codigo) {
+  await sbPatch('entradas', 'codigo=eq.'+encodeURIComponent(codigo), { estado: 'avisado' });
+  const idx = avPedidos.findIndex(x => x.codigo === codigo);
+  const fecha = new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'short' });
+  if (idx >= 0) { avPedidos[idx].notificado = true; avPedidos[idx].fecha_aviso = fecha; }
+  // Actualizar caché en memoria
+  _avCacheMem = { ts: Date.now(), data: avPedidos };
+  avRender();
+  toast('✅ Aviso enviado por WhatsApp');
+}
+
+function avSugerir(q) {
+  const box = document.getElementById('av-sugerencias');
+  if (!q || q.length < 2) { box.classList.add('hidden'); return; }
+  const mapa = {};
+  avPedidos.forEach(p => {
+    const key = p.nombre.trim().toLowerCase()+'|'+p.celular;
+    if (!mapa[key]) mapa[key] = { nombre: p.nombre, celular: p.celular };
+  });
+  const matches = Object.values(mapa).filter(c => c.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,4);
+  if (!matches.length) { box.classList.add('hidden'); return; }
+  box.innerHTML = matches.map(c => `
+    <div onclick="avElegirCliente('${c.nombre.replace(/'/g,"\\'")}','${c.celular}')"
+      class="px-3 py-2 text-sm hover:bg-green-50 cursor-pointer border-b border-slate-100 last:border-0">
+      <span class="font-medium text-slate-800">${c.nombre}</span>
+      <span class="text-slate-400 text-xs ml-2">+51 ${c.celular}</span>
+    </div>`).join('');
+  box.classList.remove('hidden');
+}
+function avElegirCliente(nombre, celular) {
+  document.getElementById('av-f-nombre').value  = nombre;
+  document.getElementById('av-f-celular').value = celular;
+  document.getElementById('av-sugerencias').classList.add('hidden');
+}
+
+function avAbrirNuevo() {
+  document.getElementById('av-modal-titulo').textContent = 'Nuevo pedido';
+  document.getElementById('av-edit-id').value   = '';
+  document.getElementById('av-f-codigo').value  = '';
+  document.getElementById('av-f-nombre').value  = '';
+  document.getElementById('av-f-celular').value = '';
+  document.getElementById('av-f-nota').value    = '';
+  document.getElementById('av-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('av-f-codigo').focus(), 50);
+}
+function avCerrarModal() { document.getElementById('av-modal').classList.add('hidden'); }
+
+async function avGuardar() {
+  const codigo  = document.getElementById('av-f-codigo').value.trim().toUpperCase();
+  const nombre  = document.getElementById('av-f-nombre').value.trim();
+  const celular = document.getElementById('av-f-celular').value.trim().replace(/\D/g,'');
+  const nota    = document.getElementById('av-f-nota').value.trim();
+  const editId  = document.getElementById('av-edit-id').value;
+
+  if (!codigo)  { toast('Ingresa el código de boleta', 'error'); return; }
+  if (!nombre)  { toast('Ingresa el nombre del cliente', 'error'); return; }
+  if (!celular) { toast('Ingresa el celular', 'error'); return; }
+
+  const payload = { codigo, nombre, celular, nota };
+  let error;
+  if (editId) {
+    ({ error } = await avSb.from('pedidos').update(payload).eq('id', editId));
+  } else {
+    payload.id = Date.now().toString();
+    payload.notificado = false;
+    payload.fecha_aviso = null;
+    ({ error } = await avSb.from('pedidos').insert(payload));
+  }
+  if (error) { toast('❌ Error al guardar', 'error'); console.error(error); return; }
+  await avCargar();
+  avCerrarModal();
+  toast(editId ? '✏️ Pedido actualizado' : '✅ Pedido guardado');
+}
+
+function avAbrirDetalle(codigo) {
+  const p = avPedidos.find(x => x.codigo === codigo);
+  if (!p) return;
+
+  const estadoHTML = p.notificado
+    ? `<div class="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+         <span class="text-xl">📨</span>
+         <div><p class="text-sm font-bold text-green-700">Ya fue avisado</p>
+         ${p.fecha_aviso?`<p class="text-xs text-green-500">el ${p.fecha_aviso}</p>`:''}</div>
+       </div>`
+    : `<div class="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-xl px-4 py-3">
+         <span class="text-xl">📵</span>
+         <p class="text-sm font-bold text-orange-600">Aún no fue avisado</p>
+       </div>`;
+
+  const btnWA = p.notificado
+    ? `<a href="${avUrlWA(p)}" target="_blank" rel="noopener" onclick="avRegistrarAviso('${p.codigo}')"
+          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-50 text-green-700 border border-green-200 font-bold text-sm hover:bg-green-100 transition">${AV_WA_SVG} Reenviar aviso</a>`
+    : `<a href="${avUrlWA(p)}" target="_blank" rel="noopener" onclick="avRegistrarAviso('${p.codigo}')"
+          class="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-500 text-white font-bold text-sm hover:bg-green-600 transition">${AV_WA_SVG} Avisar recojo por WhatsApp</a>`;
+
+  document.getElementById('av-detalle-contenido').innerHTML = `
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="font-mono text-2xl font-black text-green-700">${p.codigo}</span>
+    </div>
+    ${estadoHTML}
+    <div class="space-y-2 text-sm bg-slate-50 rounded-xl px-4 py-3">
+      <div><span class="text-slate-400">Cliente:</span> <span class="font-semibold text-slate-800 ml-1">${p.nombre}</span></div>
+      <div><span class="text-slate-400">Celular:</span> <span class="text-slate-800 ml-1">+51 ${p.celular}</span></div>
+      <div><span class="text-slate-400">Fecha:</span> <span class="text-slate-700 ml-1">📅 ${p.fecha} ${p.hora}</span></div>
+      ${p.nota?`<div><span class="text-slate-400">Nota:</span> <span class="text-slate-700 ml-1">${p.nota}</span></div>`:''}
+      ${p.items?`<div><span class="text-slate-400">Items:</span> <span class="text-slate-700 ml-1">${p.items}</span></div>`:''}
+    </div>
+    <div class="flex gap-2">${btnWA}</div>`;
+  document.getElementById('av-modal-detalle').classList.remove('hidden');
+}
+function avCerrarDetalle() { document.getElementById('av-modal-detalle').classList.add('hidden'); }
+
+try { cargarCfg(); } catch(e){}
+try { cargarTicketCfg(); } catch(e){}
+
+// ── INICIALIZACIÓN INMEDIATA (síncrona, no depende de red) ────
+try { document.getElementById('e-fecha').value = hoy(); } catch(e){}
+try { document.getElementById('e-hora').value  = horaActual(); } catch(e){}
+
+// Código: siempre viene del servidor
+try { document.getElementById('entrada-codigo').textContent = '...'; } catch(e){}
+
+try { actualizarBannerUltimoVoucher(); } catch(e){}
+agregarItemEntrada();
+
+// ── OPERACIONES EN BACKGROUND (no bloquean la UI) ─────────────
+setTimeout(() => {
+  try { nuevoCodigoEntrada(); } catch(e){}
+  try { sincronizarDesdeSupabase(); } catch(e){}
+  sbLoadConfig().then(() => { try { cargarTicketCfg(); } catch(e){} }).catch(()=>{});
+}, 100);
+
+// ─── PREVIEW TICKET ──────────────────────────────────────────
+let previewVisible = false;
+
+function togglePreview() {
+  previewVisible = !previewVisible;
+  document.getElementById('ticket-preview').classList.toggle('hidden', !previewVisible);
+  document.getElementById('btn-preview').textContent = previewVisible ? 'Ocultar' : 'Mostrar';
+  if (previewVisible) actualizarPreview();
+}
+
+function actualizarPreview() {
+  if (!previewVisible) return;
+
+  const fecha  = document.getElementById('e-fecha')?.value || hoy();
+  const [y,m,d] = fecha.split('-');
+  const meses  = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const fechaFmt = `${d}/${meses[parseInt(m)]}/${y}`;
+
+  let total = 0;
+  const items = itemsEntrada.map(i => {
+    const p = parseFloat(i.precio)||0;
+    total += p;
+    return { desc: i.desc || '—', precio: p };
+  });
+
+  const lines = buildTicketLines({
+    ...tkCfgToData(),
+    codigo:  document.getElementById('entrada-codigo')?.textContent || '---',
+    nombre:  document.getElementById('e-nombre')?.value || '(sin nombre)',
+    fechaFmt,
+    hora:    document.getElementById('e-hora')?.value || horaActual(),
+    items,
+    total,
+    nota:    document.getElementById('e-nota')?.value || '',
+  });
+
+  renderTicketPaper('ticket-paper', lines);
+}
+
+function renderTicketPaper(elId, lines) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  // Tamaño del nombre (primera línea no vacía)
+  const tn = parseInt(tkCfg.tamanoNegocio) || 1;
+  const negSize = [null, '11px', '15px', '19px', '23px'][tn] || '11px';
+  const negBold = tkCfg.boldNegocio !== false ? 'bold' : 'normal';
+  // Encontrar la línea del nombre del negocio (segunda línea, la 1ra es vacía)
+  const negocio = (tkCfg.negocio || '').toUpperCase();
+  el.innerHTML = lines.map(l => {
+    const esc = l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    if (l.trim() === negocio && negocio) {
+      return `<span style="font-size:${negSize};font-weight:${negBold};display:block;text-align:center">${esc}</span>`;
+    }
+    return `<span style="display:block">${esc || '&nbsp;'}</span>`;
+  }).join('');
+}
+
+// Actualizar preview al escribir (con debounce para eficiencia)
+const _dPreview = debounce(actualizarPreview, 150);
+['e-nombre','e-nota'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', _dPreview);
+});
+
+// Debounce para búsquedas
+const _dAvRender = debounce(avRender, 200);
+document.getElementById('av-buscar')?.addEventListener('input', _dAvRender);
+const _dBuscar = debounce(e => buscarPendientes(e.target.value), 200);
+document.getElementById('c-buscar')?.addEventListener('input', _dBuscar);
+
+// Se actualiza también cuando cambian los items (desde renderItemsEntrada)
+
+// ─── PREVIEW DE CONFIG (en el panel de configuración) ────────
+function actualizarPreviewCfg() {
+  const el = document.getElementById('cfg-ticket-preview');
+  if (!el) return;
+  const meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const hoy2 = new Date();
+  const fechaFmt = `${String(hoy2.getDate()).padStart(2,'0')}/${meses[hoy2.getMonth()+1]}/${hoy2.getFullYear()}`;
+  const lines = buildTicketLines({
+    ...tkCfgToData(),
+    codigo: '001', nombre: 'María García', fechaFmt,
+    hora: '10:30',
+    items: [{ desc: 'Ropa x kilo', precio: 20 }, { desc: 'Cubrecama', precio: 15 }],
+    total: 35, nota: '',
+  });
+  renderTicketPaper('cfg-ticket-preview', lines);
+}
+</script>
+</body>
+</html>
