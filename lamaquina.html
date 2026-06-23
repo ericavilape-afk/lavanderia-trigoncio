@@ -1511,17 +1511,24 @@ function saveCobros(d)   { _cobrosMem   = d;    }
 // ─── CÓDIGO AUTO — siempre desde el servidor ─────────────────
 async function nuevoCodigoEntrada() {
   const el = document.getElementById('entrada-codigo');
+  const mem = getEntradas();
+  if (mem.length > 0) {
+    const max = mem.reduce((m, e) => Math.max(m, parseInt(e.codigo)||0), 0);
+    const sig = String(max + 1).padStart(3, '0');
+    if (el) el.textContent = sig;
+    return sig;
+  }
   if (el) el.textContent = '...';
   try {
-    const rows = await sbGet('entradas?select=codigo');
+    const rows = await sbGet('entradas?select=codigo&codigo=neq.__config__');
     let max = 0;
     (rows || []).forEach(r => { const n = parseInt(r.codigo)||0; if(n>max) max=n; });
     const sig = String(max + 1).padStart(3, '0');
     if (el) el.textContent = sig;
     return sig;
   } catch(e) {
-    if (el) el.textContent = '⚠️ Sin red';
-    return null;
+    if (el) el.textContent = '001';
+    return '001';
   }
 }
 
@@ -2250,8 +2257,10 @@ async function _procesarEnSupabase(data) {
   } else if (data.tipo === 'ENTRADA_EDIT') {
     await sbPatch('entradas', 'codigo=eq.'+enc(data.codigo), { nombre: data.nombre, celular: data.celular||'', fecha: data.fecha, hora: data.hora, items: data.items||[], monto: parseFloat(data.monto)||0, nota: data.nota||'', estado: data.estado||'pendiente' });
   } else if (data.tipo === 'COBRO') {
-    await sbPost('cobros', { codigo_entrada: data.codigoEntrada, nombre: data.nombre||'', fecha: data.fecha||'', hora: data.hora||'', monto: parseFloat(data.monto)||0, metodo: data.metodo||'', foto_url: data.fotoUrl||'', registrado_en: data.registradoEn||new Date().toISOString() });
-    await sbPatch('entradas', 'codigo=eq.'+enc(data.codigoEntrada), { estado: 'cobrado' });
+    await Promise.all([
+      sbPost('cobros', { codigo_entrada: data.codigoEntrada, nombre: data.nombre||'', fecha: data.fecha||'', hora: data.hora||'', monto: parseFloat(data.monto)||0, metodo: data.metodo||'', foto_url: data.fotoUrl||'', registrado_en: data.registradoEn||new Date().toISOString() }),
+      sbPatch('entradas', 'codigo=eq.'+enc(data.codigoEntrada), { estado: 'cobrado' })
+    ]);
   } else if (data.tipo === 'COBRO_EDIT') {
     await sbPatch('cobros', 'codigo_entrada=eq.'+enc(data.codigoEntrada)+'&nombre=eq.'+enc(data.nombre)+'&hora=eq.'+enc(data.hora), { metodo: data.metodo, foto_url: data.fotoUrl||'' });
   } else if (data.tipo === 'COBRO_DELETE') {
@@ -2263,7 +2272,6 @@ async function _procesarEnSupabase(data) {
 
 // ─── SINCRONIZAR DESDE SHEETS AL ABRIR ───────────────────────
 async function sincronizarDesdeSupabase() {
-  toast('🔄 Sincronizando...', 'info');
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10000);
