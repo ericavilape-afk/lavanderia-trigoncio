@@ -1486,7 +1486,7 @@ async function reimprimirComp(copias) {
   for (let i = 0; i < copias; i++) {
     const ok = await enviarBT(bytes);
     if (!ok) { toast('Error al imprimir','error'); return; }
-    if (i < copias - 1) await new Promise(r => setTimeout(r, 800));
+    if (i < copias - 1) await new Promise(r => setTimeout(r, 400)); // pausa entre copias
   }
   toast(`🖨️ ${copias} copia${copias > 1 ? 's' : ''} impresas`);
 }
